@@ -8,7 +8,6 @@ const UI = {
     container.innerHTML = '';
 
     const isTenPull = cards.length > 1;
-    const hasSR = cards.some(c => c.rarity !== 'R');
 
     // 第一步：所有卡全部普通翻入
     cards.forEach((card, index) => {
@@ -18,22 +17,14 @@ const UI = {
       container.appendChild(cardEl);
     });
 
-    // 第二步：翻完后，SR/SSR卡弹出放大
-    if (hasSR) {
-      const flipDuration = isTenPull ? 1300 : 600;
-      setTimeout(() => {
-        container.querySelectorAll('.card').forEach((cardEl, i) => {
-          const rarity = cards[i].rarity;
-          if (rarity === 'SSR') {
-            cardEl.classList.add('popup-ssr');
-            cardEl.classList.add(`popup-delay-${i + 1}`);
-          } else if (rarity === 'SR') {
-            cardEl.classList.add('popup-sr');
-            cardEl.classList.add(`popup-delay-${i + 1}`);
-          }
-        });
-      }, flipDuration);
-    }
+    // 第二步：SR/SSR卡弹出放大（CSS内置延迟，翻完自动触发）
+    cards.forEach((card, index) => {
+      if (card.rarity === 'SSR') {
+        container.children[index].classList.add('popup-ssr');
+      } else if (card.rarity === 'SR') {
+        container.children[index].classList.add('popup-sr');
+      }
+    });
 
     overlay.onclick = (e) => {
       if (e.target === overlay || e.target.classList.contains('pull-results-wrapper')) {
