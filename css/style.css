@@ -662,61 +662,8 @@ html, body {
 .card-sr { border: 2px solid var(--rose); box-shadow: 0 0 14px rgba(232,160,191,0.25); }
 .card-r { border: 2px solid var(--blue-soft); box-shadow: 0 0 10px rgba(137,207,240,0.2); }
 
-/* ===== 神秘卡背 ===== */
-.card-back {
-  position: absolute; inset: 0;
-  background: linear-gradient(145deg, #2D1B4E 0%, #1A0A30 40%, #2D1B4E 100%);
-  border-radius: 14px;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  z-index: 5; backface-visibility: hidden;
-  overflow: hidden;
-}
-
-.card-back::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: radial-gradient(circle at 50% 50%, rgba(255,105,180,0.15) 0%, transparent 60%);
-  animation: mysteryPulse 1.5s ease-in-out infinite;
-}
-
-.card-back::after {
-  content: '';
-  position: absolute;
-  top: -50%; left: -50%; width: 200%; height: 200%;
-  background: conic-gradient(from 0deg, transparent 0%, rgba(255,255,255,0.05) 10%, transparent 20%);
-  animation: mysterySpin 3s linear infinite;
-}
-
-.mystery-icon {
-  font-size: 36px; z-index: 1;
-  animation: mysteryFloat 2s ease-in-out infinite;
-  filter: drop-shadow(0 0 12px rgba(255,105,180,0.6));
-}
-
-@keyframes mysteryPulse {
-  0%, 100% { opacity: 0.4; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.1); }
-}
-
-@keyframes mysterySpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes mysteryFloat {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-6px) scale(1.1); }
-}
-
-/* ===== R卡 - 直接简单入场 ===== */
+/* ===== 所有卡 - 普通翻入 ===== */
 .card-reveal.plain-card {
-  animation: plainEntrance 0.4s ease-out forwards;
-  opacity: 0; transform: scale(0.7) rotateY(90deg);
-}
-
-/* 纯R抽卡也用简单入场 */
-.card-reveal.card-r {
   animation: plainEntrance 0.4s ease-out forwards;
   opacity: 0; transform: scale(0.7) rotateY(90deg);
 }
@@ -727,111 +674,96 @@ html, body {
   100% { opacity: 1; transform: scale(1) rotateY(0); }
 }
 
-/* ===== 神秘揭晓动画 - 仅SR/SSR ===== */
-.card-reveal.mystery-card .card-inner {
-  transform: rotateY(180deg);
-  opacity: 0;
-}
-
-/* SR卡 - 翻转揭晓 */
-.card-reveal.sr-card.mystery-card .card-inner {
-  animation: mysteryRevealSR 0.7s ease-out 0.4s forwards;
-}
-
-/* SR卡 - 悬停翻转 + 粉色闪光 */
-.card-reveal.sr-card.mystery-card .card-inner {
-  animation: mysteryRevealSR 0.7s ease-out 0.4s forwards;
-}
-
-.card-reveal.sr-card.mystery-card::before {
-  content: '';
-  position: absolute; inset: -3px;
-  border-radius: 17px; z-index: -1;
-  background: conic-gradient(from 0deg, #E8A0BF, #C084FC, #E8A0BF, #F0B6D6, #E8A0BF);
-  animation: borderSpinSR 3s linear infinite, borderFadeSR 0.6s ease-out 1.0s forwards;
-  opacity: 0;
-}
-
-@keyframes mysteryRevealSR {
-  0% { transform: rotateY(180deg) scale(0.8); opacity: 0; }
-  30% { transform: rotateY(180deg) scale(0.8); opacity: 1; }
-  70% { transform: rotateY(10deg) scale(1.1); }
-  85% { transform: rotateY(-5deg) scale(1.02); }
-  100% { transform: rotateY(0deg) scale(1); opacity: 1; }
-}
-
-@keyframes borderSpinSR {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes borderFadeSR {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
-}
-
-/* SSR卡 - 慢速翻转 + 金光爆发 */
-.card-reveal.ssr-card.mystery-card {
+/* ===== 稀有卡弹出放大（翻完后触发） ===== */
+.card.popup-ssr {
+  animation: popOutSSR 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   z-index: 10;
 }
 
-.card-reveal.ssr-card.mystery-card .card-inner {
-  animation: mysteryRevealSSR 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.6s forwards;
-}
-
-.card-reveal.ssr-card.mystery-card::before {
+.card.popup-ssr::before {
   content: '';
   position: absolute; inset: -4px;
   border-radius: 18px; z-index: -1;
   background: conic-gradient(from 0deg, #FFD700, #FFA500, #FFD700, #FFEC8B, #FFD700);
-  animation: borderSpinSSR 2s linear infinite, borderFadeSSR 0.5s ease-out 1.4s forwards;
+  animation: spinBorder 2s linear infinite;
   opacity: 0;
+  animation: spinBorder 2s linear infinite, fadeInBorder 0.3s ease-out 0.1s forwards;
 }
 
-.card-reveal.ssr-card.mystery-card::after {
+.card.popup-ssr::after {
   content: '';
   position: absolute; inset: 0;
-  background: linear-gradient(45deg, transparent 30%, rgba(255,215,0,0.2) 50%, transparent 70%);
-  animation: ssrShineCard 2.5s ease-in-out infinite;
+  background: linear-gradient(45deg, transparent 30%, rgba(255,215,0,0.25) 50%, transparent 70%);
+  animation: shineCard 2s ease-in-out infinite;
   border-radius: 14px;
   z-index: 2; pointer-events: none;
+  opacity: 0;
+  animation: fadeInShine 0.3s ease-out 0.1s forwards, shineCard 2s ease-in-out 0.4s infinite;
 }
 
-.card-reveal.ssr-card.mystery-card .card-front {
-  animation: glowBurstSSR 0.8s ease-out 1.2s;
+.card.popup-sr {
+  animation: popOutSR 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  z-index: 5;
 }
 
-@keyframes mysteryRevealSSR {
-  0% { transform: rotateY(180deg) scale(0.6); opacity: 0; }
-  25% { transform: rotateY(180deg) scale(0.6); opacity: 1; }
-  55% { transform: rotateY(20deg) scale(1.2); }
-  75% { transform: rotateY(-8deg) scale(1.08); }
-  88% { transform: rotateY(3deg) scale(1.02); }
-  100% { transform: rotateY(0deg) scale(1); opacity: 1; }
+.card.popup-sr::before {
+  content: '';
+  position: absolute; inset: -3px;
+  border-radius: 17px; z-index: -1;
+  background: conic-gradient(from 0deg, #E8A0BF, #C084FC, #E8A0BF, #F0B6D6, #E8A0BF);
+  animation: spinBorder 3s linear infinite;
+  opacity: 0;
+  animation: spinBorder 3s linear infinite, fadeInBorder 0.3s ease-out 0.1s forwards;
 }
 
-@keyframes borderSpinSSR {
+@keyframes popOutSSR {
+  0% { transform: scale(1); filter: brightness(1); }
+  20% { transform: scale(1.35); filter: brightness(1.6); box-shadow: 0 0 40px rgba(255,215,0,0.6); }
+  45% { transform: scale(1.15); filter: brightness(1.2); }
+  60% { transform: scale(1.22); filter: brightness(1.35); box-shadow: 0 0 30px rgba(255,215,0,0.4); }
+  100% { transform: scale(1.18); filter: brightness(1.1); box-shadow: 0 0 25px rgba(255,215,0,0.3); }
+}
+
+@keyframes popOutSR {
+  0% { transform: scale(1); filter: brightness(1); }
+  25% { transform: scale(1.25); filter: brightness(1.3); box-shadow: 0 0 25px rgba(232,160,191,0.5); }
+  50% { transform: scale(1.1); filter: brightness(1.1); }
+  100% { transform: scale(1.12); filter: brightness(1.05); box-shadow: 0 0 18px rgba(232,160,191,0.3); }
+}
+
+@keyframes spinBorder {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
 
-@keyframes borderFadeSSR {
+@keyframes fadeInBorder {
   0% { opacity: 0; }
   100% { opacity: 1; }
 }
 
-@keyframes ssrShineCard {
+@keyframes fadeInShine {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes shineCard {
   0%, 100% { transform: translateX(-100%); }
   50% { transform: translateX(100%); }
 }
 
-@keyframes glowBurstSSR {
-  0% { filter: brightness(1) drop-shadow(0 0 0 transparent); }
-  50% { filter: brightness(1.5) drop-shadow(0 0 20px rgba(255,215,0,0.8)); }
-  100% { filter: brightness(1) drop-shadow(0 0 0 transparent); }
-}
+/* 弹出延迟 */
+.popup-delay-1 { animation-delay: 0s !important; }
+.popup-delay-2 { animation-delay: 0.08s !important; }
+.popup-delay-3 { animation-delay: 0.16s !important; }
+.popup-delay-4 { animation-delay: 0.24s !important; }
+.popup-delay-5 { animation-delay: 0.32s !important; }
+.popup-delay-6 { animation-delay: 0.40s !important; }
+.popup-delay-7 { animation-delay: 0.48s !important; }
+.popup-delay-8 { animation-delay: 0.56s !important; }
+.popup-delay-9 { animation-delay: 0.64s !important; }
+.popup-delay-10 { animation-delay: 0.72s !important; }
 
-/* 十连延迟 */
+/* 十连翻入延迟 */
 .card-delay-1 { animation-delay: 0s !important; }
 .card-delay-2 { animation-delay: 0.1s !important; }
 .card-delay-3 { animation-delay: 0.2s !important; }

@@ -1,139 +1,47 @@
 // UI动画与交互
 const UI = {
-  // ===== 抽卡结果（神秘揭晓风格） =====
+  // ===== 抽卡结果（先全部翻开，稀有卡再弹出） =====
   showPullResults(cards, callback) {
     const overlay = document.getElementById('pull-overlay');
     const container = document.getElementById('pull-results');
-    const wrapper = overlay.querySelector('.pull-results-wrapper');
     overlay.classList.add('active');
-    wrapper.style.opacity = '';
-    wrapper.style.pointerEvents = '';
+    container.innerHTML = '';
 
-    // 判断最高稀有度
-    let highestRarity = 'R';
-    if (cards.some(c => c.rarity === 'SSR')) highestRarity = 'SSR';
-    else if (cards.some(c => c.rarity === 'SR')) highestRarity = 'SR';
+    const isTenPull = cards.length > 1;
+    const hasSR = cards.some(c => c.rarity !== 'R');
 
-    if (highestRarity === 'R') {
-      // R卡：直接展示卡背 → 翻转
-      this._showCards(cards, container);
-      overlay.onclick = (e) => {
-        if (e.target === overlay || e.target.classList.contains('pull-results-wrapper')) {
-          overlay.classList.remove('active');
-          if (callback) callback();
-        }
-      };
-      return;
-    }
+    // 第一步：所有卡全部普通翻入
+    cards.forEach((card, index) => {
+      const cardEl = this.createCardElement(card, true);
+      cardEl.classList.add('plain-card');
+      if (isTenPull) cardEl.classList.add(`card-delay-${index + 1}`);
+      container.appendChild(cardEl);
+    });
 
-    // SR/SSR：先播放氛围动画
-    wrapper.style.opacity = '0';
-    wrapper.style.pointerEvents = 'none';
-
-    const ceremony = document.createElement('div');
-    ceremony.className = 'gacha-ceremony active';
-    const rarityType = highestRarity.toLowerCase();
-
-    // 1. 背景闪光
-    const flash = document.createElement('div');
-    flash.className = `ceremony-flash ${rarityType}`;
-    ceremony.appendChild(flash);
-
-    // 2. 光柱
-    const beam = document.createElement('div');
-    beam.className = `ceremony-beam ${rarityType}`;
-    ceremony.appendChild(beam);
-
-    // 3. 粒子
-    const particles = document.createElement('div');
-    particles.className = 'ceremony-particles';
-    const particleCount = rarityType === 'ssr' ? 30 : 15;
-    for (let i = 0; i < particleCount; i++) {
-      const p = document.createElement('div');
-      p.className = `particle ${rarityType}`;
-      const angle = (Math.PI * 2 * i) / particleCount;
-      const dist = 100 + Math.random() * 200;
-      p.style.setProperty('--px', `${Math.cos(angle) * dist}px`);
-      p.style.setProperty('--py', `${Math.sin(angle) * dist}px`);
-      p.style.left = '50%';
-      p.style.top = '50%';
-      p.style.animationDelay = `${0.2 + Math.random() * 0.3}s`;
-      particles.appendChild(p);
-    }
-    ceremony.appendChild(particles);
-
-    // 4. 扩散光环
-    for (let i = 0; i < 3; i++) {
-      const ring = document.createElement('div');
-      ring.className = `ceremony-ring ${rarityType}`;
-      ring.style.animationDelay = `${0.1 + i * 0.15}s`;
-      ceremony.appendChild(ring);
-    }
-
-    // 5. SSR专属：额外光柱
-    if (rarityType === 'ssr') {
-      const beam2 = document.createElement('div');
-      beam2.className = 'ceremony-beam ssr';
-      beam2.style.width = '2px';
-      beam2.style.left = '45%';
-      beam2.style.animationDelay = '0.2s';
-      ceremony.appendChild(beam2);
-
-      const beam3 = document.createElement('div');
-      beam3.className = 'ceremony-beam ssr';
-      beam3.style.width = '2px';
-      beam3.style.left = '55%';
-      beam3.style.animationDelay = '0.4s';
-      ceremony.appendChild(beam3);
-    }
-
-    overlay.appendChild(ceremony);
-
-    // 氛围动画后，展示卡背 → 翻转揭晓
-    const ceremonyDuration = rarityType === 'ssr' ? 1500 : 1000;
-    setTimeout(() => {
-      ceremony.style.transition = 'opacity 0.3s';
-      ceremony.style.opacity = '0';
-      wrapper.style.transition = 'opacity 0.2s';
-      wrapper.style.opacity = '1';
-      wrapper.style.pointerEvents = 'auto';
-
+    // 第二步：翻完后，SR/SSR卡弹出放大
+    if (hasSR) {
+      const flipDuration = isTenPull ? 1300 : 600;
       setTimeout(() => {
-        ceremony.remove();
-        this._showCards(cards, container);
-      }, 300);
-    }, ceremonyDuration);
+        container.querySelectorAll('.card').forEach((cardEl, i) => {
+          const rarity = cards[i].rarity;
+          if (rarity === 'SSR') {
+            cardEl.classList.add('popup-ssr');
+            cardEl.classList.add(`popup-delay-${i + 1}`);
+          } else if (rarity === 'SR') {
+            cardEl.classList.add('popup-sr');
+            cardEl.classList.add(`popup-delay-${i + 1}`);
+          }
+        });
+      }, flipDuration);
+    }
 
     overlay.onclick = (e) => {
       if (e.target === overlay || e.target.classList.contains('pull-results-wrapper')) {
         overlay.classList.remove('active');
-        ceremony.remove();
+        container.innerHTML = '';
         if (callback) callback();
       }
     };
-  },
-
-  _showCards(cards, container) {
-    container.innerHTML = '';
-    const isTenPull = cards.length > 1;
-    const hasMystery = cards.some(c => c.rarity !== 'R');
-
-    cards.forEach((card, index) => {
-      const cardEl = this.createCardElement(card, true);
-      const rarityClass = `${card.rarity.toLowerCase()}-card`;
-      cardEl.classList.add(rarityClass);
-
-      if (card.rarity !== 'R') {
-        cardEl.classList.add('mystery-card');
-      } else if (hasMystery) {
-        cardEl.classList.add('plain-card');
-      }
-
-      if (isTenPull) {
-        cardEl.classList.add(`card-delay-${index + 1}`);
-      }
-      container.appendChild(cardEl);
-    });
   },
 
   createCardElement(card, withAnimation = false) {
@@ -142,11 +50,9 @@ const UI = {
     if (withAnimation) el.classList.add('card-reveal');
 
     const config = RARITY_CONFIG[card.rarity];
-    const showMystery = withAnimation && card.rarity !== 'R';
 
     el.innerHTML = `
       <div class="card-inner">
-        ${showMystery ? `<div class="card-back"><span class="mystery-icon">?</span></div>` : ''}
         <div class="card-front">
           <img src="${card.image}" alt="${card.characterName}" loading="lazy">
           <div class="card-info">
