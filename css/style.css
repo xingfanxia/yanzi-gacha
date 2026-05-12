@@ -612,7 +612,7 @@ html, body {
 /* ===== 卡牌 ===== */
 .card {
   width: 125px; border-radius: 14px;
-  overflow: hidden; cursor: pointer;
+  cursor: pointer;
   position: relative;
   box-shadow: 0 4px 16px var(--shadow);
 }
