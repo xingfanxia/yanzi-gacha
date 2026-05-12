@@ -1,6 +1,6 @@
 // UI动画与交互
 const UI = {
-  // ===== 抽卡结果（先全部翻开，稀有卡再弹出） =====
+  // ===== 抽卡结果 =====
   showPullResults(cards, callback) {
     const overlay = document.getElementById('pull-overlay');
     const container = document.getElementById('pull-results');
@@ -9,21 +9,38 @@ const UI = {
 
     const isTenPull = cards.length > 1;
 
-    // 第一步：所有卡全部普通翻入
     cards.forEach((card, index) => {
-      const cardEl = this.createCardElement(card, true);
-      cardEl.classList.add('plain-card');
-      if (isTenPull) cardEl.classList.add(`card-delay-${index + 1}`);
+      const cardEl = this.createCardElement(card);
+      cardEl.style.opacity = '0';
+      cardEl.style.transform = 'scale(0)';
       container.appendChild(cardEl);
-    });
 
-    // 第二步：SR/SSR卡弹出放大（CSS内置延迟，翻完自动触发）
-    cards.forEach((card, index) => {
-      if (card.rarity === 'SSR') {
-        container.children[index].classList.add('popup-ssr');
-      } else if (card.rarity === 'SR') {
-        container.children[index].classList.add('popup-sr');
-      }
+      const delay = isTenPull ? index * 100 : 0;
+
+      // 所有卡先弹出
+      setTimeout(() => {
+        cardEl.style.transition = 'opacity 0.35s ease-out, transform 0.35s ease-out';
+        cardEl.style.opacity = '1';
+        cardEl.style.transform = 'scale(1)';
+
+        // SR/SSR 再放大弹出
+        if (card.rarity !== 'R') {
+          setTimeout(() => {
+            cardEl.style.transition = 'transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.6s ease';
+            if (card.rarity === 'SSR') {
+              cardEl.style.transform = 'scale(1.18)';
+              cardEl.style.boxShadow = '0 0 30px rgba(255,215,0,0.4)';
+              cardEl.style.zIndex = '10';
+              cardEl.classList.add('glow-ssr');
+            } else {
+              cardEl.style.transform = 'scale(1.1)';
+              cardEl.style.boxShadow = '0 0 20px rgba(232,160,191,0.35)';
+              cardEl.style.zIndex = '5';
+              cardEl.classList.add('glow-sr');
+            }
+          }, 400);
+        }
+      }, delay);
     });
 
     overlay.onclick = (e) => {
@@ -35,10 +52,9 @@ const UI = {
     };
   },
 
-  createCardElement(card, withAnimation = false) {
+  createCardElement(card) {
     const el = document.createElement('div');
     el.className = `card card-${card.rarity.toLowerCase()}`;
-    if (withAnimation) el.classList.add('card-reveal');
 
     const config = RARITY_CONFIG[card.rarity];
 
