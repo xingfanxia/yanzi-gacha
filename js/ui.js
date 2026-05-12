@@ -1,24 +1,141 @@
 // UI动画与交互
 const UI = {
-  // ===== 抽卡结果 =====
+  // ===== 抽卡结果（带仪式动画） =====
   showPullResults(cards, callback) {
     const overlay = document.getElementById('pull-overlay');
     const container = document.getElementById('pull-results');
+    const wrapper = overlay.querySelector('.pull-results-wrapper');
     overlay.classList.add('active');
-    container.innerHTML = '';
+    wrapper.style.opacity = '';
+    wrapper.style.pointerEvents = '';
 
-    cards.forEach((card, index) => {
-      const cardEl = this.createCardElement(card, true);
-      cardEl.style.animationDelay = `${index * 0.15}s`;
-      container.appendChild(cardEl);
-    });
+    // 判断最高稀有度
+    let highestRarity = 'R';
+    if (cards.some(c => c.rarity === 'SSR')) highestRarity = 'SSR';
+    else if (cards.some(c => c.rarity === 'SR')) highestRarity = 'SR';
+
+    if (highestRarity === 'R') {
+      // R卡：直接展示，简单翻转
+      this._showCards(cards, container);
+      overlay.onclick = (e) => {
+        if (e.target === overlay || e.target.classList.contains('pull-results-wrapper')) {
+          overlay.classList.remove('active');
+          if (callback) callback();
+        }
+      };
+      return;
+    }
+
+    // SR/SSR：先播放仪式动画
+    // 先隐藏卡片区域
+    wrapper.style.opacity = '0';
+    wrapper.style.pointerEvents = 'none';
+
+    // 创建仪式容器
+    const ceremony = document.createElement('div');
+    ceremony.className = 'gacha-ceremony active';
+    const rarityType = highestRarity.toLowerCase();
+
+    // 1. 背景闪光
+    const flash = document.createElement('div');
+    flash.className = `ceremony-flash ${rarityType}`;
+    ceremony.appendChild(flash);
+
+    // 2. 光柱
+    const beam = document.createElement('div');
+    beam.className = `ceremony-beam ${rarityType}`;
+    ceremony.appendChild(beam);
+
+    // 3. 粒子
+    const particles = document.createElement('div');
+    particles.className = 'ceremony-particles';
+    const particleCount = rarityType === 'ssr' ? 30 : 15;
+    for (let i = 0; i < particleCount; i++) {
+      const p = document.createElement('div');
+      p.className = `particle ${rarityType}`;
+      const angle = (Math.PI * 2 * i) / particleCount;
+      const dist = 100 + Math.random() * 200;
+      p.style.setProperty('--px', `${Math.cos(angle) * dist}px`);
+      p.style.setProperty('--py', `${Math.sin(angle) * dist}px`);
+      p.style.left = '50%';
+      p.style.top = '50%';
+      p.style.animationDelay = `${0.2 + Math.random() * 0.3}s`;
+      particles.appendChild(p);
+    }
+    ceremony.appendChild(particles);
+
+    // 4. 稀有度文字
+    const rarityText = document.createElement('div');
+    rarityText.className = `ceremony-rarity-text ${rarityType}`;
+    rarityText.textContent = highestRarity;
+    ceremony.appendChild(rarityText);
+
+    // 5. 扩散光环
+    for (let i = 0; i < 3; i++) {
+      const ring = document.createElement('div');
+      ring.className = `ceremony-ring ${rarityType}`;
+      ring.style.animationDelay = `${0.1 + i * 0.15}s`;
+      ceremony.appendChild(ring);
+    }
+
+    // 6. SSR专属：额外光柱
+    if (rarityType === 'ssr') {
+      const beam2 = document.createElement('div');
+      beam2.className = 'ceremony-beam ssr';
+      beam2.style.width = '2px';
+      beam2.style.left = '45%';
+      beam2.style.animationDelay = '0.2s';
+      ceremony.appendChild(beam2);
+
+      const beam3 = document.createElement('div');
+      beam3.className = 'ceremony-beam ssr';
+      beam3.style.width = '2px';
+      beam3.style.left = '55%';
+      beam3.style.animationDelay = '0.4s';
+      ceremony.appendChild(beam3);
+    }
+
+    overlay.appendChild(ceremony);
+
+    // 仪式时长后，展示卡牌
+    const ceremonyDuration = rarityType === 'ssr' ? 2000 : 1500;
+    setTimeout(() => {
+      ceremony.style.transition = 'opacity 0.4s';
+      ceremony.style.opacity = '0';
+      wrapper.style.transition = 'opacity 0.3s';
+      wrapper.style.opacity = '1';
+      wrapper.style.pointerEvents = 'auto';
+
+      setTimeout(() => {
+        ceremony.remove();
+        this._showCards(cards, container);
+      }, 400);
+    }, ceremonyDuration);
 
     overlay.onclick = (e) => {
       if (e.target === overlay || e.target.classList.contains('pull-results-wrapper')) {
         overlay.classList.remove('active');
+        ceremony.remove();
         if (callback) callback();
       }
     };
+  },
+
+  _showCards(cards, container) {
+    container.innerHTML = '';
+    const isTenPull = cards.length > 1;
+
+    cards.forEach((card, index) => {
+      const cardEl = this.createCardElement(card, true);
+      // 根据稀有度添加对应动画类
+      const rarityClass = `${card.rarity.toLowerCase()}-card`;
+      cardEl.classList.add(rarityClass);
+      // 十连时加延迟类
+      if (isTenPull) {
+        cardEl.classList.add(`card-delay-${index + 1}`);
+      }
+      container.appendChild(cardEl);
+    });
   },
 
   createCardElement(card, withAnimation = false) {

@@ -432,6 +432,182 @@ html, body {
   max-height: 62vh; overflow-y: auto; padding: 8px;
 }
 
+/* ===== 抽卡仪式动画容器 ===== */
+.gacha-ceremony {
+  position: fixed; inset: 0;
+  z-index: 250; display: none;
+  align-items: center; justify-content: center;
+  pointer-events: none;
+}
+
+.gacha-ceremony.active {
+  display: flex;
+  pointer-events: none;
+}
+
+/* 背景闪光 */
+.ceremony-flash {
+  position: absolute; inset: 0;
+  opacity: 0; pointer-events: none;
+}
+
+.ceremony-flash.ssr {
+  background: radial-gradient(circle at center, rgba(255,215,0,0.6) 0%, rgba(255,240,245,0.95) 60%, rgba(255,240,245,1) 100%);
+  animation: flashSSR 1.8s ease-out forwards;
+}
+
+.ceremony-flash.sr {
+  background: radial-gradient(circle at center, rgba(232,160,191,0.5) 0%, rgba(255,240,245,0.9) 60%, rgba(255,240,245,1) 100%);
+  animation: flashSR 1.4s ease-out forwards;
+}
+
+@keyframes flashSSR {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes flashSR {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* 光柱 */
+.ceremony-beam {
+  position: absolute;
+  bottom: 0; left: 50%;
+  width: 4px; height: 0;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.ceremony-beam.ssr {
+  background: linear-gradient(to top, transparent, rgba(255,215,0,0.8), rgba(255,255,255,0.9));
+  box-shadow: 0 0 30px rgba(255,215,0,0.5), 0 0 60px rgba(255,215,0,0.3);
+  animation: beamSSR 1.8s ease-out forwards;
+}
+
+.ceremony-beam.sr {
+  background: linear-gradient(to top, transparent, rgba(232,160,191,0.7), rgba(255,255,255,0.8));
+  box-shadow: 0 0 20px rgba(232,160,191,0.4), 0 0 40px rgba(232,160,191,0.2);
+  animation: beamSR 1.4s ease-out forwards;
+}
+
+@keyframes beamSSR {
+  0% { height: 0; opacity: 0; width: 4px; }
+  20% { height: 100vh; opacity: 1; width: 6px; }
+  50% { height: 100vh; opacity: 0.8; width: 3px; }
+  100% { height: 100vh; opacity: 0; width: 1px; }
+}
+
+@keyframes beamSR {
+  0% { height: 0; opacity: 0; }
+  25% { height: 80vh; opacity: 0.8; }
+  100% { height: 80vh; opacity: 0; }
+}
+
+/* 粒子容器 */
+.ceremony-particles {
+  position: absolute; inset: 0;
+  pointer-events: none; overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.particle.ssr {
+  background: var(--gold);
+  box-shadow: 0 0 6px var(--gold), 0 0 12px rgba(255,215,0,0.5);
+  animation: particleSSR 1.2s ease-out forwards;
+}
+
+.particle.sr {
+  background: var(--rose);
+  box-shadow: 0 0 4px var(--rose);
+  animation: particleSR 1s ease-out forwards;
+}
+
+@keyframes particleSSR {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--px), var(--py)) scale(0); opacity: 0; }
+}
+
+@keyframes particleSR {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.8; }
+  100% { transform: translate(var(--px), var(--py)) scale(0); opacity: 0; }
+}
+
+/* 仪式中的稀有度文字 */
+.ceremony-rarity-text {
+  position: absolute;
+  font-size: 56px; font-weight: 900;
+  letter-spacing: 8px;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.ceremony-rarity-text.ssr {
+  background: linear-gradient(135deg, #FFD700, #FFA500, #FFD700);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 0 20px rgba(255,215,0,0.6));
+  animation: rarityTextSSR 2s ease-out forwards;
+}
+
+.ceremony-rarity-text.sr {
+  background: linear-gradient(135deg, #E8A0BF, #C084FC, #E8A0BF);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 15px rgba(232,160,191,0.5));
+  animation: rarityTextSR 1.5s ease-out forwards;
+}
+
+@keyframes rarityTextSSR {
+  0% { opacity: 0; transform: scale(3); filter: blur(10px); }
+  30% { opacity: 1; transform: scale(1.2); filter: blur(0); }
+  60% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.8) translateY(-40px); }
+}
+
+@keyframes rarityTextSR {
+  0% { opacity: 0; transform: scale(2.5); filter: blur(6px); }
+  35% { opacity: 1; transform: scale(1.1); filter: blur(0); }
+  70% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.8) translateY(-30px); }
+}
+
+/* 光环扩散 */
+.ceremony-ring {
+  position: absolute;
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  border: 3px solid;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.ceremony-ring.ssr {
+  border-color: var(--gold);
+  box-shadow: 0 0 20px rgba(255,215,0,0.4);
+  animation: ringExpand 1.5s ease-out forwards;
+}
+
+.ceremony-ring.sr {
+  border-color: var(--rose);
+  box-shadow: 0 0 15px rgba(232,160,191,0.3);
+  animation: ringExpand 1.2s ease-out forwards;
+}
+
+@keyframes ringExpand {
+  0% { transform: scale(0.1); opacity: 1; border-width: 4px; }
+  60% { opacity: 0.6; }
+  100% { transform: scale(6); opacity: 0; border-width: 1px; }
+}
+
 /* ===== 卡牌 ===== */
 .card {
   width: 125px; border-radius: 14px;
@@ -485,30 +661,120 @@ html, body {
 .card-sr { border: 2px solid var(--rose); box-shadow: 0 0 14px rgba(232,160,191,0.25); }
 .card-r { border: 2px solid var(--blue-soft); box-shadow: 0 0 10px rgba(137,207,240,0.2); }
 
-/* 卡牌揭示动画 */
-.card-reveal {
-  animation: cardReveal 0.6s ease-out forwards;
-  opacity: 0; transform: scale(0.5) rotateY(180deg);
+/* ===== R卡 - 简单快速翻转 ===== */
+.card-reveal.r-card {
+  animation: cardFlipR 0.5s ease-out forwards;
+  opacity: 0; transform: scale(0.7) rotateY(180deg);
 }
 
-@keyframes cardReveal {
-  0% { opacity: 0; transform: scale(0.5) rotateY(180deg); }
-  50% { opacity: 1; transform: scale(1.08) rotateY(90deg); }
+@keyframes cardFlipR {
+  0% { opacity: 0; transform: scale(0.7) rotateY(180deg); }
+  60% { opacity: 1; transform: scale(1.03) rotateY(20deg); }
   100% { opacity: 1; transform: scale(1) rotateY(0); }
 }
 
-/* SSR闪光 */
-.card-ssr .card-front::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(45deg, transparent 30%, rgba(255,215,0,0.12) 50%, transparent 70%);
-  animation: ssrShine 2s ease-in-out infinite;
+/* ===== SR卡 - 弹出+粉色光效 ===== */
+.card-reveal.sr-card {
+  animation: cardPopSR 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  opacity: 0; transform: scale(0) rotateZ(10deg);
 }
 
-@keyframes ssrShine {
+.card-reveal.sr-card .card-glow {
+  animation: glowPulseSR 1.2s ease-out;
+}
+
+@keyframes cardPopSR {
+  0% { opacity: 0; transform: scale(0) rotateZ(10deg); }
+  40% { opacity: 1; transform: scale(1.15) rotateZ(-3deg); }
+  60% { transform: scale(0.95) rotateZ(1deg); }
+  80% { transform: scale(1.05) rotateZ(0); }
+  100% { opacity: 1; transform: scale(1) rotateZ(0); }
+}
+
+@keyframes glowPulseSR {
+  0% { box-shadow: inset 0 0 0 rgba(232,160,191,0); }
+  30% { box-shadow: inset 0 0 40px rgba(232,160,191,0.5); }
+  100% { box-shadow: inset 0 0 0 rgba(232,160,191,0); }
+}
+
+/* ===== SSR卡 - 完整仪式：弹出+缩放+脉冲光环 ===== */
+.card-reveal.ssr-card {
+  animation: cardEntranceSSR 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  opacity: 0; transform: scale(0) rotateZ(15deg);
+  z-index: 10;
+}
+
+.card-reveal.ssr-card .card-glow {
+  animation: glowPulseSSR 2s ease-out;
+}
+
+.card-reveal.ssr-card::before {
+  content: '';
+  position: absolute; inset: -4px;
+  border-radius: 18px;
+  background: conic-gradient(from 0deg, #FFD700, #FFA500, #FFD700, #FFEC8B, #FFD700);
+  z-index: -1;
+  animation: borderSpinSSR 3s linear infinite;
+  opacity: 0;
+  animation: borderSpinSSR 3s linear infinite, borderFadeIn 1.2s ease-out forwards;
+}
+
+.card-reveal.ssr-card::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255,215,0,0.15) 50%, transparent 70%);
+  animation: ssrShineCard 2s ease-in-out infinite;
+  border-radius: 14px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+@keyframes cardEntranceSSR {
+  0% { opacity: 0; transform: scale(0) rotateZ(15deg); }
+  25% { opacity: 1; transform: scale(1.2) rotateZ(-5deg); }
+  40% { transform: scale(0.9) rotateZ(3deg); }
+  55% { transform: scale(1.1) rotateZ(-1deg); }
+  70% { transform: scale(0.97) rotateZ(0.5deg); }
+  85% { transform: scale(1.03) rotateZ(0); }
+  100% { transform: scale(1) rotateZ(0); }
+}
+
+@keyframes glowPulseSSR {
+  0% { box-shadow: inset 0 0 0 rgba(255,215,0,0); }
+  20% { box-shadow: inset 0 0 60px rgba(255,215,0,0.6), 0 0 40px rgba(255,215,0,0.4); }
+  50% { box-shadow: inset 0 0 30px rgba(255,215,0,0.3), 0 0 20px rgba(255,215,0,0.2); }
+  70% { box-shadow: inset 0 0 50px rgba(255,215,0,0.5), 0 0 30px rgba(255,215,0,0.3); }
+  100% { box-shadow: inset 0 0 0 rgba(255,215,0,0); }
+}
+
+@keyframes borderSpinSSR {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes borderFadeIn {
+  0% { opacity: 0; }
+  30% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+@keyframes ssrShineCard {
   0%, 100% { transform: translateX(-100%); }
   50% { transform: translateX(100%); }
 }
+
+/* 十连中R卡延迟出现 */
+.card-delay-1 { animation-delay: 0s !important; }
+.card-delay-2 { animation-delay: 0.08s !important; }
+.card-delay-3 { animation-delay: 0.16s !important; }
+.card-delay-4 { animation-delay: 0.24s !important; }
+.card-delay-5 { animation-delay: 0.32s !important; }
+.card-delay-6 { animation-delay: 0.40s !important; }
+.card-delay-7 { animation-delay: 0.48s !important; }
+.card-delay-8 { animation-delay: 0.56s !important; }
+.card-delay-9 { animation-delay: 0.64s !important; }
+.card-delay-10 { animation-delay: 0.72s !important; }
 
 /* ===== 卡牌详情 ===== */
 .detail-content {
