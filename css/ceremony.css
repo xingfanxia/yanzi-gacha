@@ -1,0 +1,1418 @@
+/* ============================================================
+   抽卡演出舞台 - Blue Archive 8 阶段
+   信封 → 展开 Halo 卡 → 签字批准 → 卡片飞散 → Shockwave →
+   白闪 → 角色立绘 → 结果网格
+   依赖: tokens.css, animations.css
+   ============================================================ */
+
+/* ============================================================
+   舞台容器
+   ============================================================ */
+
+.ceremony-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: none;
+  pointer-events: none;
+  overflow: hidden;
+  contain: strict;
+  font-family: var(--f-display);
+}
+
+.ceremony-stage.is-active {
+  display: block;
+  pointer-events: auto;
+}
+
+/* ============================================================
+   背景层 — 由 JS 切换 data-phase 决定颜色
+   ============================================================ */
+
+.ceremony-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse at 50% 40%, oklch(0.96 0.05 200) 0%, oklch(0.92 0.06 200) 60%, oklch(0.88 0.05 210) 100%);
+  transition: background 700ms var(--e-out);
+}
+
+/* Phase 2-5: 粉紫梦幻渐变（halo 卡 / 飞散 / shockwave） */
+.ceremony-bg.is-phase-magic {
+  background:
+    radial-gradient(ellipse at 30% 30%, oklch(0.90 0.10 320 / 0.7) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 70%, oklch(0.88 0.13 280 / 0.7) 0%, transparent 60%),
+    linear-gradient(160deg, oklch(0.94 0.07 320) 0%, oklch(0.88 0.10 295) 50%, oklch(0.92 0.07 240) 100%);
+}
+
+/* Phase 7: 角色登场（柔和粉紫底，让立绘成视觉主角） */
+.ceremony-bg.is-phase-reveal {
+  background:
+    radial-gradient(ellipse at 50% 60%, oklch(0.92 0.07 290) 0%, oklch(0.88 0.06 270) 60%, oklch(0.85 0.05 250) 100%);
+}
+
+/* Phase 8: 结果网格（更亮、近白） */
+.ceremony-bg.is-phase-result {
+  background: linear-gradient(180deg, oklch(0.97 0.02 220) 0%, oklch(0.94 0.04 250) 100%);
+}
+
+/* ============================================================
+   星屑/钻石装饰层（粉紫阶段叠加）
+   ============================================================ */
+
+.ceremony-sparkles {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 500ms var(--e-out);
+}
+
+.ceremony-sparkles.is-active { opacity: 1; }
+
+.sparkle-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: oklch(1 0 0 / 0.9);
+  box-shadow: 0 0 8px oklch(1 0 0 / 0.8), 0 0 18px oklch(0.95 0.12 220 / 0.5);
+  animation: sparkle-twinkle 2.4s ease-in-out infinite;
+}
+
+.sparkle-diamond {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: oklch(0.97 0.08 220);
+  transform: rotate(45deg);
+  box-shadow: 0 0 12px oklch(0.85 0.18 240 / 0.7);
+  animation: sparkle-twinkle 3s ease-in-out infinite;
+}
+
+@keyframes sparkle-twinkle {
+  0%, 100% { opacity: 0.25; transform: scale(0.7); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+.sparkle-diamond {
+  /* override transform inside keyframe via animation property */
+  animation-name: sparkle-twinkle-diamond;
+}
+
+@keyframes sparkle-twinkle-diamond {
+  0%, 100% { opacity: 0.3; transform: rotate(45deg) scale(0.8); }
+  50% { opacity: 1; transform: rotate(45deg) scale(1.2); }
+}
+
+/* ============================================================
+   Phase 1: 信封
+   ============================================================ */
+
+.envelope-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.envelope-stage.is-active { display: flex; }
+
+.envelope-card {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  border-radius: 28px;
+  background: oklch(0.65 0.18 230);
+  box-shadow:
+    0 0 0 6px oklch(0.85 0.10 220 / 0.4),
+    0 24px 60px oklch(0.55 0.20 240 / 0.45),
+    inset 0 -8px 20px oklch(0.45 0.16 250 / 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: scale(0) translateY(40px);
+  opacity: 0;
+}
+
+.envelope-card.is-in {
+  animation: envelope-in 500ms var(--e-spring) forwards;
+}
+
+.envelope-card.is-out {
+  animation: envelope-out 280ms var(--e-out) forwards;
+}
+
+.envelope-icon {
+  width: 110px;
+  height: 110px;
+  filter: drop-shadow(0 4px 10px oklch(0.20 0.10 230 / 0.4));
+}
+
+.envelope-badge {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  min-width: 38px;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 50%;
+  background: oklch(0.65 0.24 25);
+  color: #fff;
+  font-family: var(--f-num);
+  font-weight: 900;
+  font-size: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: -0.02em;
+  box-shadow: 0 4px 12px oklch(0.50 0.22 20 / 0.5);
+  transform: scale(0);
+  animation: badge-pop 360ms 200ms var(--e-spring) forwards;
+}
+
+@keyframes envelope-in {
+  0% { opacity: 0; transform: scale(0.3) translateY(80px); }
+  60% { opacity: 1; transform: scale(1.08) translateY(-8px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes envelope-out {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.4) rotateY(90deg); }
+}
+
+@keyframes badge-pop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* ============================================================
+   Phase 2-3: Halo 文档卡 + 签字批准条
+   ============================================================ */
+
+.halo-card-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: var(--gap-5);
+}
+
+.halo-card-stage.is-active { display: flex; }
+
+.halo-paper {
+  position: relative;
+  width: 280px;
+  max-width: 80vw;
+  aspect-ratio: 3 / 4.2;
+  background: linear-gradient(180deg, oklch(0.99 0.005 80) 0%, oklch(0.97 0.012 70) 100%);
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 1px oklch(0.85 0.04 80),
+    0 20px 50px oklch(0.30 0.08 290 / 0.30),
+    inset 0 0 60px oklch(0.95 0.05 220 / 0.4);
+  padding: 18px 18px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.3) rotateY(180deg);
+}
+
+.halo-paper.is-in {
+  animation: halo-paper-in 700ms var(--e-spring) forwards;
+}
+
+@keyframes halo-paper-in {
+  0% { opacity: 0; transform: scale(0.3) rotateY(180deg); }
+  60% { opacity: 1; transform: scale(1.04) rotateY(-8deg); }
+  100% { opacity: 1; transform: scale(1) rotateY(0deg); }
+}
+
+.halo-paper-clip {
+  position: absolute;
+  top: -6px;
+  left: 22px;
+  width: 22px;
+  height: 28px;
+  border-radius: 6px 6px 2px 2px;
+  background: linear-gradient(180deg, oklch(0.85 0.04 60), oklch(0.72 0.06 60));
+  box-shadow: 0 2px 4px oklch(0.30 0.06 60 / 0.3);
+}
+
+.halo-paper-tag {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-family: var(--f-warn);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: #fff;
+  background: oklch(0.65 0.18 230);
+  padding: 3px 10px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px oklch(0.50 0.18 240 / 0.4);
+}
+
+.halo-paper-symbol {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.halo-paper-symbol svg {
+  width: 80%;
+  height: 100%;
+  max-height: 220px;
+}
+
+.halo-paper-footer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-top: 8px;
+}
+
+.halo-paper-line {
+  width: 60%;
+  height: 1px;
+  background: oklch(0.78 0.04 200);
+}
+
+.halo-paper-text {
+  font-family: var(--f-warn);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: oklch(0.50 0.05 230);
+}
+
+/* 签字批准条 */
+.sign-stripe {
+  position: relative;
+  width: 280px;
+  max-width: 80vw;
+  height: 50px;
+  border-radius: 4px;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.sign-stripe.is-in {
+  animation: sign-stripe-in 360ms var(--e-out) forwards;
+}
+
+@keyframes sign-stripe-in {
+  0% { opacity: 0; transform: translateY(24px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.sign-stripe-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      oklch(0.92 0.05 350) 0,
+      oklch(0.92 0.05 350) 10px,
+      oklch(0.96 0.03 350) 10px,
+      oklch(0.96 0.03 350) 20px
+    );
+  border-top: 2px solid oklch(0.78 0.10 350);
+  border-bottom: 2px solid oklch(0.78 0.10 350);
+}
+
+.sign-stripe-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 18px;
+  color: oklch(0.40 0.18 5);
+  letter-spacing: 0.12em;
+  text-shadow: 0 1px 0 oklch(1 0 0), 0 2px 4px oklch(0.50 0.10 350 / 0.4);
+  z-index: 2;
+}
+
+/* 等待点击状态 - cursor pointer + 文字脉冲 */
+.sign-stripe.is-waiting { cursor: pointer; }
+
+.sign-stripe.is-waiting .sign-stripe-text {
+  animation: sign-text-pulse 1.4s ease-in-out infinite;
+}
+
+.sign-stripe.is-waiting:active { transform: scale(0.97); }
+
+.sign-stripe.is-signed .sign-stripe-text { animation: none; }
+
+@keyframes sign-text-pulse {
+  0%, 100% {
+    transform: scale(1);
+    text-shadow: 0 1px 0 oklch(1 0 0), 0 2px 4px oklch(0.50 0.10 350 / 0.4);
+  }
+  50% {
+    transform: scale(1.08);
+    text-shadow: 0 1px 0 oklch(1 0 0),
+                 0 0 14px oklch(0.62 0.20 350 / 0.85),
+                 0 2px 6px oklch(0.50 0.10 350 / 0.5);
+  }
+}
+
+.sign-doodle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -10px;
+  width: 100%;
+  height: 36px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.sign-doodle path {
+  stroke-dasharray: 700;
+  stroke-dashoffset: 700;
+}
+
+.sign-doodle.is-in path {
+  animation: sign-draw 700ms 100ms var(--e-out) forwards;
+}
+
+@keyframes sign-draw {
+  0% { stroke-dashoffset: 700; }
+  100% { stroke-dashoffset: 0; }
+}
+
+/* ============================================================
+   Phase 4: 卡片飞散到 5×2
+   ============================================================ */
+
+.cards-spread {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gap-5) var(--gap-3);
+}
+
+.cards-spread.is-active { display: flex; }
+
+.cards-spread-inner {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.spread-card {
+  position: relative;
+  aspect-ratio: 3 / 4.2;
+  background: linear-gradient(180deg, oklch(0.99 0.005 80) 0%, oklch(0.96 0.012 70) 100%);
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 1px oklch(0.85 0.04 80),
+    0 6px 16px oklch(0.30 0.06 290 / 0.20);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translate(0, 0) scale(0.6) rotate(0deg);
+}
+
+.spread-card.is-in {
+  animation: spread-fly 600ms var(--e-spring) forwards;
+}
+
+.spread-card svg {
+  width: 56%;
+  height: 56%;
+}
+
+.spread-card.is-ssr {
+  box-shadow:
+    0 0 0 2px oklch(0.83 0.17 85),
+    0 0 24px oklch(0.83 0.17 85 / 0.55),
+    0 8px 22px oklch(0.40 0.18 70 / 0.30);
+}
+
+.spread-card.is-sr {
+  box-shadow:
+    0 0 0 1.5px oklch(0.68 0.20 305),
+    0 0 18px oklch(0.68 0.20 305 / 0.45),
+    0 8px 22px oklch(0.40 0.18 290 / 0.30);
+}
+
+@keyframes spread-fly {
+  0% { opacity: 0; transform: translate(var(--from-x, 0), var(--from-y, 0)) scale(0.4) rotate(var(--rot, 0deg)); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: translate(0, 0) scale(1) rotate(0deg); }
+}
+
+/* ============================================================
+   Phase 5: Shockwave 同心圆
+   ============================================================ */
+
+.shockwave-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.shockwave-stage.is-active { display: flex; }
+
+.sw-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  border: 4px solid oklch(0.78 0.13 200 / 0.85);
+  box-shadow:
+    0 0 30px oklch(0.78 0.18 200 / 0.6),
+    inset 0 0 30px oklch(0.78 0.18 200 / 0.4);
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+
+.shockwave-stage.is-ssr .sw-ring {
+  border-color: oklch(0.85 0.16 90 / 0.85);
+  box-shadow:
+    0 0 40px oklch(0.85 0.18 80 / 0.7),
+    inset 0 0 40px oklch(0.85 0.18 80 / 0.4);
+}
+
+.shockwave-stage.is-active .sw-ring-1 {
+  animation: sw-burst 1200ms var(--e-burst) forwards;
+}
+.shockwave-stage.is-active .sw-ring-2 {
+  animation: sw-burst 1200ms 180ms var(--e-burst) forwards;
+  border-width: 3px;
+}
+.shockwave-stage.is-active .sw-ring-3 {
+  animation: sw-burst 1200ms 360ms var(--e-burst) forwards;
+  border-width: 2px;
+}
+
+@keyframes sw-burst {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+  50% { opacity: 0.95; }
+  100% { transform: translate(-50%, -50%) scale(6); opacity: 0; border-width: 0.5px; }
+}
+
+/* ============================================================
+   Phase 6: 全屏白闪
+   ============================================================ */
+
+.flash-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 11;
+  pointer-events: none;
+  background: oklch(1 0 0);
+  opacity: 0;
+  mix-blend-mode: screen;
+}
+
+.flash-overlay.is-active {
+  animation: flash-burst 480ms var(--e-out) forwards;
+}
+
+@keyframes flash-burst {
+  0% { opacity: 0; }
+  30% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ============================================================
+   Phase 7: 角色立绘登场
+   ============================================================ */
+
+.character-reveal-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: calc(120px + var(--safe-pad));
+}
+
+.character-reveal-stage.is-active { display: flex; }
+
+.reveal-bg-glow {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  width: 600px;
+  height: 600px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle,
+    oklch(0.95 0.10 220 / 0.5) 0%,
+    oklch(0.85 0.18 200 / 0.25) 30%,
+    transparent 70%);
+  pointer-events: none;
+  opacity: 0;
+  animation: reveal-glow-in 800ms 100ms var(--e-out) forwards;
+}
+
+@keyframes reveal-glow-in {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.reveal-portrait {
+  position: relative;
+  width: 100%;
+  height: 80%;
+  max-height: 600px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 2;
+  opacity: 0;
+}
+
+.reveal-portrait.is-in {
+  animation: reveal-portrait-in 900ms var(--e-spring) forwards;
+}
+
+@keyframes reveal-portrait-in {
+  0% { opacity: 0; transform: translateY(60px) scale(0.95); }
+  60% { opacity: 1; transform: translateY(-12px) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.reveal-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+
+.reveal-halo {
+  display: none;
+}
+
+@keyframes reveal-halo-in {
+  0% { opacity: 0; transform: translateX(-50%) scale(0.6) translateY(-20px); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
+}
+
+.reveal-namecard {
+  position: absolute;
+  left: 18px;
+  bottom: calc(140px + var(--safe-pad));
+  z-index: 4;
+  background: oklch(0.15 0.04 280 / 0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 10px 16px;
+  border-radius: 4px;
+  border-left: 4px solid oklch(0.85 0.16 90);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 180px;
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+.character-reveal-stage.is-active .reveal-namecard {
+  animation: reveal-namecard-in 500ms 600ms var(--e-out) forwards;
+}
+
+@keyframes reveal-namecard-in {
+  0% { opacity: 0; transform: translateX(-30px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+.reveal-tag {
+  font-family: var(--f-warn);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: oklch(0.30 0.18 70);
+  background: oklch(0.85 0.16 90);
+  padding: 2px 8px;
+  border-radius: 3px;
+  align-self: flex-start;
+}
+
+.reveal-stars {
+  color: oklch(0.90 0.16 90);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 8px oklch(0.85 0.18 80 / 0.6);
+}
+
+.reveal-cn {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 24px;
+  color: #fff;
+  letter-spacing: 0.06em;
+}
+
+/* ============================================================
+   Phase 8: 结果网格 + 操作
+   ============================================================ */
+
+.result-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: calc(var(--gap-6) + var(--safe-pad)) var(--gap-3) calc(var(--gap-5) + var(--safe-pad));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.result-stage.is-active { display: flex; }
+
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+/* 单抽特殊布局 - 居中放大一张 */
+.result-grid.is-single {
+  grid-template-columns: 1fr;
+  max-width: 200px;
+}
+
+.result-bottom {
+  margin-top: var(--gap-6);
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-4);
+  opacity: 0;
+}
+
+.result-stage.is-active .result-bottom {
+  animation: result-bottom-in 500ms 200ms var(--e-out) forwards;
+}
+
+@keyframes result-bottom-in {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.result-btn-row {
+  display: flex;
+  gap: var(--gap-3);
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.result-btn {
+  position: relative;
+  padding: 14px 26px;
+  border-radius: 8px;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  transition: transform 120ms var(--e-spring);
+  cursor: pointer;
+  border: none;
+}
+
+.result-btn:active { transform: scale(0.96); }
+
+/* 确认按钮 - 白底蓝字 */
+.result-btn-confirm {
+  background: #fff;
+  color: oklch(0.45 0.18 240);
+  border: 2px solid oklch(0.65 0.18 245);
+  box-shadow: 0 4px 14px oklch(0.65 0.18 245 / 0.25);
+  min-width: 110px;
+}
+
+/* 再次招募 - 大黄按钮 */
+.result-btn-again {
+  background: linear-gradient(180deg, oklch(0.92 0.16 92) 0%, oklch(0.82 0.18 78) 100%);
+  color: oklch(0.25 0.10 50);
+  box-shadow:
+    0 0 0 2px oklch(0.95 0.10 90) inset,
+    0 6px 0 oklch(0.55 0.16 60),
+    0 12px 24px oklch(0.55 0.16 60 / 0.4);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 160px;
+  justify-content: center;
+}
+
+.result-btn-num {
+  font-family: var(--f-num);
+  font-weight: 900;
+  font-size: 20px;
+}
+
+/* "全部翻开" 按钮 */
+.result-reveal-all {
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: oklch(0.97 0.012 220);
+  color: oklch(0.42 0.12 240);
+  border: 1.5px dashed oklch(0.78 0.13 240);
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  cursor: pointer;
+  transition: transform 120ms var(--e-spring), background 200ms var(--e-out);
+}
+
+.result-reveal-all:hover {
+  background: oklch(0.93 0.04 220);
+  border-style: solid;
+}
+
+.result-reveal-all:active { transform: scale(0.96); }
+
+.result-point {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--f-warn);
+  letter-spacing: 0.15em;
+  color: oklch(0.40 0.05 280);
+}
+
+.result-point-label {
+  font-size: 11px;
+}
+
+.result-point-num {
+  font-family: var(--f-num);
+  font-weight: 900;
+  font-size: 18px;
+  color: oklch(0.55 0.18 240);
+  letter-spacing: 0.04em;
+}
+
+.result-point-unit {
+  font-size: 11px;
+  margin-left: 2px;
+}
+
+/* ============================================================
+   结果网格中的 BA 头像卡 (createResultAvatarCard 输出)
+   ============================================================ */
+
+.avatar-card {
+  position: relative;
+  aspect-ratio: 3 / 4.2;
+  border-radius: 6px;
+  overflow: hidden;
+  background: linear-gradient(180deg, oklch(0.85 0.10 220) 0%, oklch(0.75 0.13 250) 100%);
+  box-shadow: 0 4px 12px oklch(0.30 0.08 250 / 0.30);
+  cursor: pointer;
+  isolation: isolate;
+  transition: transform 180ms var(--e-spring), box-shadow 180ms var(--e-out);
+  opacity: 0;
+  transform: scale(0.7);
+}
+
+.avatar-card.is-in {
+  animation: avatar-pop 460ms var(--e-spring) forwards;
+}
+
+@keyframes avatar-pop {
+  0% { opacity: 0; transform: scale(0.6) rotate(-4deg); }
+  60% { opacity: 1; transform: scale(1.05) rotate(1deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+.avatar-card:active { transform: scale(0.96); }
+
+.avatar-card-r {
+  background: linear-gradient(180deg, oklch(0.85 0.10 220) 0%, oklch(0.70 0.16 240) 100%);
+}
+
+.avatar-card-sr {
+  background: linear-gradient(180deg, oklch(0.85 0.10 305) 0%, oklch(0.68 0.20 295) 100%);
+  box-shadow:
+    0 0 0 1.5px oklch(0.78 0.20 305),
+    0 0 18px oklch(0.68 0.20 305 / 0.45),
+    0 4px 12px oklch(0.30 0.10 290 / 0.30);
+}
+
+.avatar-card-ssr {
+  background: linear-gradient(180deg, oklch(0.95 0.12 90) 0%, oklch(0.85 0.18 70) 100%);
+  box-shadow:
+    0 0 0 2px oklch(0.88 0.16 85),
+    0 0 24px oklch(0.83 0.17 85 / 0.55),
+    0 4px 14px oklch(0.40 0.18 70 / 0.30);
+}
+
+.avatar-card-photo {
+  position: absolute;
+  inset: 16% 8% 28% 8%;
+  border-radius: 4px;
+  overflow: hidden;
+  background: oklch(0.95 0.02 60);
+}
+
+.avatar-card-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* NEW tag */
+.avatar-card-new {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 3;
+  background: oklch(0.85 0.16 90);
+  color: oklch(0.30 0.16 60);
+  font-family: var(--f-warn);
+  font-weight: 800;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  border-radius: 3px;
+  transform: rotate(-6deg);
+  box-shadow: 0 2px 4px oklch(0.40 0.12 60 / 0.3);
+}
+
+/* 3 颗金星 - 底部 */
+.avatar-card-stars {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 16%;
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  z-index: 3;
+}
+
+.avatar-card-stars .star {
+  color: oklch(0.92 0.16 90);
+  font-size: 14px;
+  text-shadow:
+    0 0 6px oklch(0.85 0.18 80 / 0.9),
+    0 1px 1px oklch(0.40 0.10 60 / 0.4);
+}
+
+/* 角色名 - 底部 */
+.avatar-card-name {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4%;
+  text-align: center;
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 11px;
+  color: #fff;
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 3px oklch(0.20 0.10 280 / 0.7);
+  z-index: 3;
+  padding: 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 重复角色金币提示 */
+.avatar-card-dup {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 3;
+  background: oklch(0.95 0.12 90 / 0.92);
+  color: oklch(0.30 0.14 60);
+  font-family: var(--f-num);
+  font-weight: 800;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+/* 单抽放大 */
+.result-grid.is-single .avatar-card {
+  font-size: 1.6em;
+}
+
+.result-grid.is-single .avatar-card-stars .star { font-size: 22px; }
+.result-grid.is-single .avatar-card-name { font-size: 17px; bottom: 5%; }
+.result-grid.is-single .avatar-card-new { font-size: 13px; padding: 4px 10px; }
+
+/* ============================================================
+   Skip 按钮 (永久存在)
+   ============================================================ */
+
+.ceremony-skip {
+  position: absolute;
+  top: max(var(--gap-4), env(safe-area-inset-top, 0));
+  right: var(--gap-4);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--r-full);
+  background: oklch(0.18 0.04 270 / 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #fff;
+  font-family: var(--f-warn);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  border: 1px solid oklch(1 0 0 / 0.25);
+  pointer-events: auto;
+  transition: all 120ms var(--e-out);
+  cursor: pointer;
+}
+
+.ceremony-skip:hover { background: oklch(0.10 0.04 270 / 0.85); }
+.ceremony-skip:active { transform: scale(0.94); }
+
+.skip-icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   稀有度大字横幅 (Phase 7 立绘前 fade in)
+   ============================================================ */
+
+.reveal-rarity-banner {
+  position: absolute;
+  left: 50%;
+  top: 12%;
+  transform: translate(-50%, -20px);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.reveal-rarity-banner.is-in {
+  animation: reveal-rarity-fade 1500ms var(--e-spring) forwards;
+}
+
+@keyframes reveal-rarity-fade {
+  0% { opacity: 0; transform: translate(-50%, -30px) scale(0.6); }
+  20% { opacity: 1; transform: translate(-50%, 0) scale(1.08); }
+  40% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -10px) scale(0.95); }
+}
+
+.reveal-rarity-text {
+  font-family: var(--f-num);
+  font-weight: 900;
+  font-size: 92px;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  -webkit-text-stroke: 2px oklch(1 0 0 / 0.4);
+}
+
+.reveal-rarity-sub {
+  font-family: var(--f-warn);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.55em;
+  color: oklch(0.30 0.04 280);
+  margin-left: 0.55em;
+}
+
+/* SSR - 金色 */
+.reveal-rarity-banner.is-ssr .reveal-rarity-text {
+  background: linear-gradient(180deg, oklch(0.95 0.13 95) 0%, oklch(0.78 0.20 60) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 24px oklch(0.85 0.18 80 / 0.85))
+          drop-shadow(0 4px 8px oklch(0.40 0.15 60 / 0.5));
+}
+.reveal-rarity-banner.is-ssr .reveal-rarity-sub {
+  color: oklch(0.45 0.18 60);
+  text-shadow: 0 0 8px oklch(0.85 0.18 80 / 0.6);
+}
+
+/* SR - 紫色 */
+.reveal-rarity-banner.is-sr .reveal-rarity-text {
+  font-size: 78px;
+  background: linear-gradient(180deg, oklch(0.78 0.20 320) 0%, oklch(0.55 0.22 295) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 18px oklch(0.68 0.22 305 / 0.75))
+          drop-shadow(0 4px 8px oklch(0.40 0.20 290 / 0.5));
+}
+.reveal-rarity-banner.is-sr .reveal-rarity-sub {
+  color: oklch(0.45 0.20 295);
+}
+
+/* R - 蓝色 */
+.reveal-rarity-banner.is-r .reveal-rarity-text {
+  font-size: 64px;
+  background: linear-gradient(180deg, oklch(0.78 0.14 220) 0%, oklch(0.55 0.20 250) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 12px oklch(0.70 0.18 240 / 0.6))
+          drop-shadow(0 4px 8px oklch(0.40 0.18 250 / 0.4));
+}
+.reveal-rarity-banner.is-r .reveal-rarity-sub {
+  color: oklch(0.45 0.18 250);
+}
+
+/* ============================================================
+   Phase 7 - 立绘 tier-specific 背景光晕 / Halo / 名牌
+   ============================================================ */
+
+/* SSR 金光 */
+.character-reveal-stage.is-ssr .reveal-bg-glow {
+  background: radial-gradient(circle,
+    oklch(0.97 0.13 90 / 0.6) 0%,
+    oklch(0.85 0.18 75 / 0.4) 25%,
+    oklch(0.78 0.20 60 / 0.15) 50%,
+    transparent 75%);
+}
+
+/* SR 紫光 */
+.character-reveal-stage.is-sr .reveal-bg-glow {
+  background: radial-gradient(circle,
+    oklch(0.90 0.14 320 / 0.55) 0%,
+    oklch(0.78 0.20 305 / 0.35) 30%,
+    oklch(0.65 0.20 295 / 0.15) 55%,
+    transparent 75%);
+}
+
+/* R 蓝光 */
+.character-reveal-stage.is-r .reveal-bg-glow {
+  background: radial-gradient(circle,
+    oklch(0.92 0.10 220 / 0.5) 0%,
+    oklch(0.78 0.14 235 / 0.3) 30%,
+    oklch(0.65 0.18 245 / 0.12) 55%,
+    transparent 75%);
+}
+
+/* 名牌左 border 按 tier 染色 */
+.character-reveal-stage.is-ssr .reveal-namecard {
+  border-left-color: oklch(0.85 0.16 90);
+}
+.character-reveal-stage.is-sr .reveal-namecard {
+  border-left-color: oklch(0.72 0.20 305);
+}
+.character-reveal-stage.is-r .reveal-namecard {
+  border-left-color: oklch(0.70 0.16 235);
+}
+
+.character-reveal-stage.is-sr .reveal-tag {
+  background: oklch(0.78 0.18 305);
+  color: oklch(0.20 0.10 290);
+}
+.character-reveal-stage.is-r .reveal-tag {
+  background: oklch(0.78 0.13 230);
+  color: oklch(0.20 0.10 240);
+}
+
+.character-reveal-stage.is-sr .reveal-stars {
+  color: oklch(0.85 0.18 305);
+  text-shadow: 0 0 8px oklch(0.72 0.22 305 / 0.7);
+}
+.character-reveal-stage.is-r .reveal-stars {
+  color: oklch(0.85 0.15 230);
+  text-shadow: 0 0 6px oklch(0.70 0.18 240 / 0.6);
+}
+
+/* ============================================================
+   Phase 8 结果格子 - 翻牌交互
+   R: 直接翻开 / SR/SSR: halo 背面 → 点击翻面 → avatar
+   ============================================================ */
+
+.result-slot {
+  position: relative;
+  aspect-ratio: 3 / 4.2;
+  perspective: 800px;
+  transform-style: preserve-3d;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.result-slot.is-flipped { cursor: pointer; }
+
+.result-slot:not(.is-flipped) {
+  animation: spread-fly 460ms var(--e-spring) forwards;
+}
+
+.result-slot.is-flipped {
+  animation: avatar-pop 460ms var(--e-spring) forwards;
+}
+
+/* 翻面中的过渡（先收缩再展开） */
+.result-slot.is-flipping > * {
+  animation: flip-out 320ms var(--e-out) forwards;
+}
+
+@keyframes flip-out {
+  0% { transform: rotateY(0deg) scale(1); }
+  100% { transform: rotateY(90deg) scale(0.92); opacity: 0.5; }
+}
+
+/* SR/SSR 翻面特写演出: zoom + dim 全屏 + burst ring */
+.result-stage.has-zoom .result-grid > .result-slot:not(.is-zooming) {
+  filter: brightness(0.45) saturate(0.7);
+  transition: filter 280ms var(--e-out);
+}
+
+.result-stage.has-zoom .result-bottom {
+  filter: brightness(0.6);
+  transition: filter 280ms var(--e-out);
+  pointer-events: none;
+}
+
+.result-slot.is-zooming {
+  z-index: 60;
+  animation: slot-zoom 1300ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  filter: drop-shadow(0 8px 24px oklch(0.30 0.10 280 / 0.4));
+}
+
+.result-slot.result-slot-sr.is-zooming {
+  filter: drop-shadow(0 0 40px oklch(0.72 0.22 305 / 0.7));
+}
+.result-slot.result-slot-ssr.is-zooming {
+  filter: drop-shadow(0 0 50px oklch(0.83 0.18 80 / 0.8));
+}
+
+@keyframes slot-zoom {
+  0% { transform: scale(1) translateY(0); }
+  15% { transform: scale(2.3) translateY(120px); }
+  60% { transform: scale(2.3) translateY(120px); }
+  90% { transform: scale(1.1) translateY(10px); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+/* 翻面时的卡牌内 flip 动画（halo back → avatar 中间过渡） */
+.result-slot.is-zooming .halo-back-card {
+  animation: card-flip-out 320ms var(--e-out) forwards;
+  transform-origin: center;
+  transform-style: preserve-3d;
+}
+
+@keyframes card-flip-out {
+  0% { transform: rotateY(0deg); }
+  100% { transform: rotateY(90deg); opacity: 0; }
+}
+
+.result-slot.is-zooming .avatar-card {
+  animation: card-flip-in 380ms var(--e-spring) forwards;
+  transform-origin: center;
+  transform-style: preserve-3d;
+}
+
+@keyframes card-flip-in {
+  0% { transform: rotateY(-90deg) scale(0.95); opacity: 0; }
+  60% { transform: rotateY(15deg) scale(1.05); opacity: 1; }
+  100% { transform: rotateY(0deg) scale(1); opacity: 1; }
+}
+
+/* Halo Shockwave burst ring 从卡片中心展开 */
+.slot-burst {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 60%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  pointer-events: none;
+  z-index: 65;
+  mix-blend-mode: screen;
+}
+
+.slot-burst-sr {
+  border: 3px solid oklch(0.78 0.22 305 / 0.85);
+  box-shadow:
+    0 0 28px oklch(0.72 0.22 305 / 0.7),
+    inset 0 0 28px oklch(0.78 0.22 305 / 0.5);
+  animation: burst-expand 1000ms 250ms var(--e-burst) forwards;
+}
+
+.slot-burst-ssr {
+  border: 4px solid oklch(0.88 0.16 85 / 0.9);
+  box-shadow:
+    0 0 36px oklch(0.83 0.18 80 / 0.8),
+    inset 0 0 36px oklch(0.88 0.16 85 / 0.55);
+  animation: burst-expand 1000ms 250ms var(--e-burst) forwards;
+}
+
+@keyframes burst-expand {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+  50% { opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(8); opacity: 0; border-width: 0.5px; }
+}
+
+/* halo 背面卡（在结果格子里，比 spread-card 更大更突出） */
+.halo-back-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, oklch(0.99 0.005 80) 0%, oklch(0.96 0.012 70) 100%);
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 1.5px oklch(0.85 0.04 80),
+    0 6px 16px oklch(0.30 0.06 290 / 0.20);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8% 6%;
+  transition: transform 180ms var(--e-spring);
+}
+
+.halo-back-card svg {
+  width: 60%;
+  height: 60%;
+}
+
+.halo-back-tap {
+  font-family: var(--f-warn);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: oklch(0.45 0.08 230);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.halo-back-card:active { transform: scale(0.94); }
+
+.halo-back-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    oklch(1 0 0 / 0.5) 45%,
+    oklch(0.92 0.13 60 / 0.55) 50%,
+    oklch(1 0 0 / 0.5) 55%,
+    transparent 70%
+  );
+  background-size: 250% 100%;
+  background-position: -150% center;
+  mix-blend-mode: screen;
+  animation: foil-sweep 2.6s ease-in-out infinite;
+}
+
+/* SR halo 背面: 紫光边框 */
+.halo-back-sr {
+  background: linear-gradient(180deg, oklch(0.99 0.005 80) 0%, oklch(0.96 0.04 305) 100%);
+  box-shadow:
+    0 0 0 2px oklch(0.72 0.20 305),
+    0 0 22px oklch(0.68 0.20 305 / 0.55),
+    0 4px 12px oklch(0.30 0.10 290 / 0.30);
+}
+.halo-back-sr .halo-back-tap { color: oklch(0.55 0.20 305); }
+
+/* SSR halo 背面: 金光 + 强 foil */
+.halo-back-ssr {
+  background: linear-gradient(180deg, oklch(0.99 0.04 90) 0%, oklch(0.93 0.10 75) 100%);
+  box-shadow:
+    0 0 0 2px oklch(0.83 0.17 85),
+    0 0 30px oklch(0.83 0.17 85 / 0.7),
+    0 4px 14px oklch(0.40 0.18 70 / 0.35);
+}
+.halo-back-ssr .halo-back-tap { color: oklch(0.45 0.16 60); }
+
+.halo-back-ssr::after {
+  animation-duration: 1.8s;
+}
+
+/* avatar-card 在 result-slot 内不需要再自己动画 */
+.result-slot.is-flipped .avatar-card {
+  animation: none;
+  opacity: 1;
+  transform: scale(1);
+  position: absolute;
+  inset: 0;
+}
+
+.result-slot.is-flipped .avatar-card.is-flipped {
+  animation: flip-in 360ms var(--e-spring) forwards;
+}
+
+@keyframes flip-in {
+  0% { transform: rotateY(-90deg) scale(0.92); opacity: 0; }
+  60% { transform: rotateY(10deg) scale(1.04); opacity: 1; }
+  100% { transform: rotateY(0deg) scale(1); opacity: 1; }
+}
+
+/* ============================================================
+   响应式
+   ============================================================ */
+
+@media (max-width: 380px) {
+  .envelope-card { width: 170px; height: 170px; }
+  .envelope-icon { width: 90px; height: 90px; }
+  .halo-paper { width: 240px; }
+  .sign-stripe { width: 240px; }
+  .sign-stripe-text { font-size: 16px; }
+  .cards-spread-inner { gap: 4px; }
+  .result-grid { gap: 4px; }
+  .reveal-namecard { min-width: 150px; left: 12px; }
+  .reveal-cn { font-size: 20px; }
+  .result-btn { font-size: 14px; padding: 12px 20px; }
+  .reveal-rarity-text { font-size: 76px; }
+  .reveal-rarity-banner.is-sr .reveal-rarity-text { font-size: 64px; }
+  .reveal-rarity-banner.is-r .reveal-rarity-text { font-size: 54px; }
+  .halo-back-tap { font-size: 8px; }
+}

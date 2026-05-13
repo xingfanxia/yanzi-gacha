@@ -1,0 +1,150 @@
+/* ============================================================
+   妍子写真俱乐部 — 设计 Token 系统
+   风格: Blue Archive 学园清新 + 拍立得摄影 + 二次元手游骨架
+   ============================================================ */
+
+:root {
+  /* ============ 色彩系统 (OKLCH 等亮度感知) ============ */
+
+  /* 基底 - 暖白系（让cos照片成为视觉主角） */
+  --bg-deep:       oklch(0.985 0.012 75);
+  --bg-panel:      oklch(1.00 0 0);
+  --bg-card:       oklch(0.98 0.008 50);
+  --bg-soft:       oklch(0.955 0.020 60);
+  --bg-paper:      oklch(0.97 0.015 70);
+  --bg-frosted:    oklch(1.00 0 0 / 0.78);
+  --bg-overlay:    oklch(0.94 0.025 350 / 0.92);
+
+  /* 主品牌 - 妍子粉 / 学院紫 */
+  --accent-1:      oklch(0.72 0.18 350);     /* 妍子粉 */
+  --accent-1-soft: oklch(0.85 0.10 350);
+  --accent-1-deep: oklch(0.55 0.20 350);
+  --accent-2:      oklch(0.78 0.13 30);      /* 橘粉 */
+  --accent-3:      oklch(0.65 0.18 290);     /* 学院紫 */
+  --accent-3-soft: oklch(0.82 0.09 295);
+
+  /* 文本 */
+  --text-1:        oklch(0.25 0.020 285);
+  --text-2:        oklch(0.48 0.025 285);
+  --text-3:        oklch(0.68 0.018 280);
+  --text-on-dark:  oklch(0.97 0.005 280);
+  --text-link:     oklch(0.55 0.20 350);
+
+  /* 分隔/边框 */
+  --border-1:      oklch(0.92 0.018 340);
+  --border-2:      oklch(0.86 0.025 340);
+  --border-3:      oklch(0.78 0.040 340);
+  --border-soft:   oklch(0.72 0.18 350 / 0.25);
+
+  /* ============ 稀有度系统（NIKKE光晕半径递增思想 + Blue Archive调色） ============ */
+
+  --r-color:        oklch(0.70 0.16 230);     /* 天蓝 */
+  --r-color-deep:   oklch(0.55 0.20 235);
+  --r-color-soft:   oklch(0.85 0.08 230);
+
+  --sr-color:       oklch(0.68 0.20 305);     /* 柔紫 */
+  --sr-color-deep:  oklch(0.55 0.22 295);
+  --sr-color-soft:  oklch(0.85 0.10 305);
+
+  --ssr-color:      oklch(0.83 0.17 85);      /* 暖金 */
+  --ssr-color-deep: oklch(0.68 0.20 70);
+  --ssr-color-soft: oklch(0.93 0.10 90);
+
+  /* 光晕阶梯（核心 - 让稀有度有视觉层级感） */
+  --glow-r:    0 0 22px oklch(0.70 0.16 230 / 0.55);
+  --glow-sr:   0 0 38px oklch(0.68 0.20 305 / 0.60);
+  --glow-ssr:  0 0 64px oklch(0.83 0.17 85 / 0.70);
+  --glow-ssr-strong: 0 0 100px oklch(0.83 0.17 85 / 0.90);
+
+  /* 渐变 */
+  --grad-accent:    linear-gradient(135deg, oklch(0.72 0.18 350) 0%, oklch(0.65 0.18 290) 100%);
+  --grad-warm:      linear-gradient(135deg, oklch(0.85 0.13 60) 0%, oklch(0.78 0.18 30) 100%);
+  --grad-r:         linear-gradient(135deg, oklch(0.78 0.14 220), oklch(0.62 0.20 250));
+  --grad-sr:        linear-gradient(135deg, oklch(0.75 0.20 320), oklch(0.62 0.22 285));
+  --grad-ssr:       linear-gradient(135deg, oklch(0.90 0.13 95), oklch(0.72 0.20 60));
+  --grad-darkroom:  radial-gradient(ellipse at center,
+                      oklch(0.22 0.030 285) 0%,
+                      oklch(0.12 0.025 290) 60%,
+                      oklch(0.08 0.020 290) 100%);
+  --grad-spotlight: radial-gradient(circle at center,
+                      oklch(0.55 0.18 350 / 0.45) 0%,
+                      transparent 65%);
+  --grad-photo-paper: linear-gradient(180deg, oklch(0.99 0.005 80), oklch(0.96 0.015 70));
+
+  /* ============ 圆角 ============ */
+  --r-xs:   4px;
+  --r-sm:   8px;
+  --r-md:   14px;
+  --r-lg:   20px;
+  --r-xl:   28px;
+  --r-2xl:  36px;
+  --r-full: 9999px;
+
+  /* ============ 阴影 ============ */
+  --sh-sm:   0 1px 4px oklch(0.30 0.05 320 / 0.06);
+  --sh-md:   0 4px 16px oklch(0.30 0.05 320 / 0.10);
+  --sh-lg:   0 10px 36px oklch(0.30 0.05 320 / 0.14);
+  --sh-xl:   0 20px 56px oklch(0.30 0.05 320 / 0.20);
+  /* 拍立得"贴在桌上"的层叠感 */
+  --sh-polaroid: 0 2px 4px oklch(0.30 0.05 320 / 0.08),
+                 0 8px 20px oklch(0.30 0.05 320 / 0.12);
+  --sh-polaroid-lifted: 0 4px 8px oklch(0.30 0.05 320 / 0.10),
+                        0 16px 40px oklch(0.30 0.05 320 / 0.18);
+  --sh-button-pop: 0 4px 0 oklch(0.55 0.20 350 / 0.30),
+                   0 8px 20px oklch(0.72 0.18 350 / 0.30);
+
+  /* ============ 字体系统 (5套分工，类NIKKE) ============ */
+
+  /* 显示标题 - 圆润日系 */
+  --f-display: "M PLUS Rounded 1c", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  /* 正文 - 现代sans+中文 */
+  --f-body:    "Outfit", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  /* 工业数字 - HUD感 */
+  --f-num:     "Big Shoulders Display", "Outfit", sans-serif;
+  /* 手写 - 拍立得签名 */
+  --f-hand:    "Caveat", "Reenie Beanie", cursive;
+  /* 高瘦警示/标签 */
+  --f-warn:    "Bebas Neue", "Big Shoulders Display", sans-serif;
+
+  /* ============ 间距 ============ */
+  --gap-1:  4px;
+  --gap-2:  8px;
+  --gap-3:  12px;
+  --gap-4:  16px;
+  --gap-5:  20px;
+  --gap-6:  28px;
+  --gap-7:  40px;
+  --gap-8:  56px;
+
+  /* ============ 动画 ============ */
+  --d-fast:   120ms;
+  --d-soft:   240ms;
+  --d-med:    420ms;
+  --d-long:   700ms;
+  --d-xlong:  1200ms;
+
+  /* Easing 曲线（演出用） */
+  --e-out:     cubic-bezier(0.4, 0.0, 0.2, 1);          /* 标准平滑 */
+  --e-in-out:  cubic-bezier(0.65, 0.05, 0.36, 1);
+  --e-spring:  cubic-bezier(0.34, 1.56, 0.64, 1);       /* 弹性overshoot */
+  --e-anti:    cubic-bezier(0.22, 0.36, 0.32, 0.95);    /* 蓄力慢加速 */
+  --e-burst:   cubic-bezier(0.05, 0.70, 0.10, 1);       /* 爆发急速 */
+  --e-soft:    cubic-bezier(0.16, 1, 0.30, 1);          /* 极慢出场 */
+
+  /* ============ Layout ============ */
+  --nav-h:  64px;
+  --top-h:  52px;
+  --max-w:  480px;   /* 竖屏手游主视区 */
+  --safe-pad: max(env(safe-area-inset-bottom), 0px);
+}
+
+/* ============ Reduced Motion 适配 ============ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --d-fast: 0ms;
+    --d-soft: 0ms;
+    --d-med: 0ms;
+    --d-long: 0ms;
+    --d-xlong: 0ms;
+  }
+}

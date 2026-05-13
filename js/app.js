@@ -1,15 +1,18 @@
-// 游戏状态管理
+/* ============================================================
+   状态管理 + 主应用入口
+   ============================================================ */
+
 const GameState = {
   STORAGE_KEY: 'yanzi-gacha-state',
 
   defaultState() {
     return {
-      tickets: 3,          // 抽卡券
-      coins: 0,            // 金币
-      collection: [],      // 已收集卡牌 ['charId_imageIdx', ...]
-      pityCount: 0,        // SSR保底计数
-      totalPulls: 0,       // 总抽卡次数
-      lastCheckin: '',     // 上次签到日期
+      tickets: 5,
+      coins: 0,
+      collection: [],
+      pityCount: 0,
+      totalPulls: 0,
+      lastCheckin: '',
       sharedWechat: false,
       sharedQQ: false,
       sharedWeibo: false,
@@ -37,15 +40,14 @@ const GameState = {
   }
 };
 
-// 主应用
 const app = {
   init() {
     this.bindEvents();
     UI.updateStatusBar();
     this.renderBanner();
     this.renderCharPreview();
+    UI.renderTasks();
 
-    // 检查邀请链接参数
     const params = new URLSearchParams(window.location.search);
     if (params.get('inviter')) {
       const state = GameState.get();
@@ -54,28 +56,28 @@ const app = {
         state._invited = true;
         GameState.save(state);
         UI.updateStatusBar();
-        setTimeout(() => alert('欢迎！你通过好友邀请来到这里，获得1张抽卡券！'), 500);
+        setTimeout(() => alert('欢迎！通过好友邀请加入，获得1张抽卡券！'), 500);
       }
     }
   },
 
   bindEvents() {
-    // Tab切换
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        UI.switchTab(btn.dataset.tab);
-      });
+    // Tab 切换
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => UI.switchTab(btn.dataset.tab));
     });
 
     // 抽卡按钮
-    document.getElementById('btn-single').addEventListener('click', () => this.doSinglePull());
-    document.getElementById('btn-ten').addEventListener('click', () => this.doTenPull());
+    const single = document.getElementById('btn-single');
+    const ten = document.getElementById('btn-ten');
+    if (single) single.addEventListener('click', () => this.doSinglePull());
+    if (ten) ten.addEventListener('click', () => this.doTenPull());
 
     // 图鉴筛选
     document.querySelectorAll('.filter-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('is-active'));
+        btn.classList.add('is-active');
         UI.renderCollection(btn.dataset.filter);
       });
     });
@@ -102,25 +104,37 @@ const app = {
   },
 
   renderBanner() {
-    const ssrCards = getCardsByRarity('SSR');
-    if (ssrCards.length > 0) {
-      const banner = document.getElementById('banner');
-      banner.style.backgroundImage = `url(${ssrCards[0].src})`;
+    const ssrCards = (typeof getCardsByRarity === 'function')
+      ? getCardsByRarity('SSR')
+      : [];
+    if (ssrCards.length === 0) return;
+    const bannerImg = document.getElementById('banner-img');
+    if (bannerImg) {
+      // 随机选一张SSR当banner
+      const pick = ssrCards[Math.floor(Math.random() * ssrCards.length)];
+      bannerImg.style.backgroundImage = `url("${pick.src}")`;
     }
   },
 
   renderCharPreview() {
     const container = document.getElementById('char-preview');
-    container.innerHTML = CHARACTERS.map(char => {
+    if (!container) return;
+    while (container.firstChild) container.removeChild(container.firstChild);
+
+    CHARACTERS.forEach(char => {
       const thumb = getCharacterThumb(char.id);
-      return `<div class="char-thumb"
-                   onclick="UI.showCharacterGallery(CHARACTERS.find(c=>c.id==='${char.id}'))"
-                   title="${char.name}">
-        <img src="${thumb}" alt="${char.name}" loading="lazy">
-      </div>`;
-    }).join('');
+      const item = $el('div', {
+        cls: 'char-thumb',
+        attr: { title: char.name }
+      });
+      item.appendChild($el('img', {
+        attr: { src: thumb, alt: char.name, loading: 'lazy' }
+      }));
+      item.appendChild($el('span', { cls: 'char-thumb-name', text: char.name }));
+      item.addEventListener('click', () => UI.showCharacterGallery(char));
+      container.appendChild(item);
+    });
   }
 };
 
-// 启动
 document.addEventListener('DOMContentLoaded', () => app.init());

@@ -1,0 +1,295 @@
+/* ============================================================
+   抽卡演出 + UI 动画库
+   节奏模型: 0.3s 快门 → 2.2s 蓄力 → 1.5s 暗示 → 4s 揭示 → 4s 整理
+   ============================================================ */
+
+/* ======================== 基础 UI 动画 ======================== */
+
+@keyframes float-up {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.03); }
+}
+
+@keyframes shimmer-x {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes ribbon-wave {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+
+@keyframes bokeh-drift {
+  0% { transform: translate(0, 0) scale(1); opacity: 0; }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.4; }
+  100% { transform: translate(var(--dx, 30px), var(--dy, -50px)) scale(1.2); opacity: 0; }
+}
+
+@keyframes fade-up {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.6); }
+  60% { opacity: 1; transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes badge-bounce {
+  0%, 100% { transform: rotate(-8deg) scale(1); }
+  50% { transform: rotate(-8deg) scale(1.08); }
+}
+
+/* ======================== 抽卡演出 Phase 1: 快门按下 ======================== */
+
+@keyframes shutter-flash {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes ui-fade-out {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ======================== Phase 2: 暗房蓄力 ======================== */
+
+/* 摄影棚帘幕降下 */
+@keyframes curtain-down {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(0); }
+}
+
+/* 暗房红灯渐入 */
+@keyframes darkroom-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* 胶片从底部升起 */
+@keyframes film-rise {
+  0% { transform: translateY(120vh) rotate(var(--tilt, 0deg)); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateY(0) rotate(var(--tilt, 0deg)); opacity: 1; }
+}
+
+/* 扫描线 */
+@keyframes scanline-drift {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* HUD 字符滚动 */
+@keyframes hud-scroll {
+  0% { transform: translateX(100vw); }
+  100% { transform: translateX(-100%); }
+}
+
+/* 银盐粒子飘 */
+@keyframes silver-grain {
+  0% { transform: translate(0, 0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 0.6; }
+  100% { transform: translate(var(--dx, 0), var(--dy, -100px)); opacity: 0; }
+}
+
+/* 胶片轻微晃 */
+@keyframes film-shiver {
+  0%, 100% { transform: translateY(0) rotate(var(--tilt, 0deg)); }
+  50% { transform: translateY(-3px) rotate(calc(var(--tilt, 0deg) + 0.3deg)); }
+}
+
+/* ======================== Phase 3: 稀有度暗示 ======================== */
+
+/* R - 青色光晕渐显 */
+@keyframes hint-r {
+  0% { box-shadow: 0 0 0 transparent; }
+  100% { box-shadow: var(--glow-r); border-color: var(--r-color); }
+}
+
+/* SR - 紫色光晕 + 轻微抖动 */
+@keyframes hint-sr {
+  0% { box-shadow: 0 0 0 transparent; transform: translateY(0); }
+  50% { box-shadow: var(--glow-sr); transform: translateY(-2px); }
+  100% { box-shadow: var(--glow-sr); transform: translateY(0); border-color: var(--sr-color); }
+}
+
+/* SSR - 金色爆发 + 屏幕震动 */
+@keyframes hint-ssr {
+  0% { box-shadow: 0 0 0 transparent; transform: scale(1); }
+  30% { box-shadow: var(--glow-ssr); transform: scale(1.05); }
+  60% { box-shadow: var(--glow-ssr-strong); transform: scale(1.02); }
+  100% { box-shadow: var(--glow-ssr-strong); transform: scale(1); border-color: var(--ssr-color); }
+}
+
+/* 屏幕"屏息"瞬间 - 暗下来0.5s */
+@keyframes breath-hold {
+  0% { background: oklch(0.10 0.020 290); }
+  50% { background: oklch(0.05 0.020 290); }
+  100% { background: oklch(0.10 0.020 290); }
+}
+
+/* SSR 触发屏幕震动 */
+@keyframes camera-shake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(2px, -2px); }
+  60% { transform: translate(-2px, -2px); }
+  80% { transform: translate(2px, 2px); }
+}
+
+/* SSR Glitch - 色散 */
+@keyframes glitch-aberration {
+  0%, 100% {
+    text-shadow: 0 0 0 transparent;
+    filter: none;
+  }
+  20% {
+    filter: drop-shadow(2px 0 0 oklch(0.65 0.30 25)) drop-shadow(-2px 0 0 oklch(0.75 0.20 200));
+  }
+  40% {
+    filter: drop-shadow(-2px 0 0 oklch(0.65 0.30 25)) drop-shadow(2px 0 0 oklch(0.75 0.20 200));
+  }
+  60% {
+    filter: drop-shadow(1px 0 0 oklch(0.65 0.30 25)) drop-shadow(-1px 0 0 oklch(0.75 0.20 200));
+  }
+}
+
+/* 光柱爆发 */
+@keyframes beam-burst {
+  0% { transform: translate(-50%, -50%) scaleY(0); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(-50%, -50%) scaleY(1); opacity: 0.9; }
+}
+
+/* 冲击波扩散 */
+@keyframes shockwave {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 1; border-width: 4px; }
+  100% { transform: translate(-50%, -50%) scale(8); opacity: 0; border-width: 0.5px; }
+}
+
+/* 金粒子爆出 */
+@keyframes particle-burst {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--px, 100px), var(--py, -150px)) scale(0.2);
+    opacity: 0;
+  }
+}
+
+/* ======================== Phase 4: 揭示翻面 ======================== */
+
+/* 拍立得3D翻面 */
+@keyframes polaroid-flip {
+  0% {
+    transform: perspective(800px) rotateY(180deg);
+    box-shadow: var(--sh-polaroid);
+  }
+  60% {
+    transform: perspective(800px) rotateY(-10deg) scale(1.05);
+  }
+  100% {
+    transform: perspective(800px) rotateY(0deg);
+    box-shadow: var(--sh-polaroid-lifted);
+  }
+}
+
+/* 显影 - 从灰显色 */
+@keyframes develop {
+  0% { filter: grayscale(1) brightness(0.4) blur(8px); opacity: 0.3; }
+  40% { filter: grayscale(0.7) brightness(0.7) blur(4px); opacity: 0.7; }
+  100% { filter: grayscale(0) brightness(1) blur(0); opacity: 1; }
+}
+
+/* 卡片弹入（settle） */
+@keyframes card-settle {
+  0% { transform: scale(0.95); opacity: 0; }
+  60% { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+/* SSR专属 - 持续金粒子上飘 */
+@keyframes confetti-up {
+  0% { transform: translateY(100vh); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(-100vh); opacity: 0; }
+}
+
+/* 角色名字fade-in + lock */
+@keyframes name-reveal {
+  0% { opacity: 0; transform: translateY(8px); letter-spacing: 0.3em; }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0); letter-spacing: 0.05em; }
+}
+
+/* foil shimmer 扫光 */
+@keyframes foil-sweep {
+  0% { background-position: -150% center; }
+  50% { background-position: 150% center; }
+  100% { background-position: 250% center; }
+}
+
+/* 稀有度边框旋转 (SSR持续) */
+@keyframes border-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ======================== Phase 5: 网格整理 ======================== */
+
+@keyframes grid-stagger-in {
+  0% { transform: translateY(40px) scale(0.85); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* ======================== 通用 ======================== */
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes sparkle {
+  0%, 100% { transform: scale(0) rotate(0deg); opacity: 0; }
+  50% { transform: scale(1) rotate(180deg); opacity: 1; }
+}
+
+@keyframes tab-active-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1.08); }
+}
+
+@keyframes red-dot-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.65 0.20 25 / 0.7); }
+  50% { box-shadow: 0 0 0 6px oklch(0.65 0.20 25 / 0); }
+}
+
+/* ======================== 工具类 ======================== */
+
+.fade-up { animation: fade-up var(--d-med) var(--e-out) both; }
+.pop-in { animation: pop-in var(--d-med) var(--e-spring) both; }
+.float { animation: float-up 3s ease-in-out infinite; }
+.shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  background-size: 200% 100%;
+  animation: shimmer-x 2.5s linear infinite;
+}
+.blink { animation: blink 1.2s ease-in-out infinite; }

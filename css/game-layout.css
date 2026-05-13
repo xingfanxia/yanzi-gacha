@@ -1,0 +1,726 @@
+/* ============================================================
+   Blue Archive 风格 - 主页/抽卡 Banner 布局
+   亮色基底 + halo + paper info card + 大黄按钮
+   ============================================================ */
+
+/* ============ Blue Archive 专属色彩 ============ */
+:root {
+  --ba-bg-1:        oklch(0.97 0.020 240);     /* 浅蓝白底 */
+  --ba-bg-2:        oklch(0.93 0.045 235);     /* 天蓝中调 */
+  --ba-bg-3:        oklch(0.78 0.10 240);      /* 较深天蓝 */
+  --ba-blue:        oklch(0.65 0.18 245);      /* 主蓝 (sky blue) */
+  --ba-blue-deep:   oklch(0.50 0.20 250);
+  --ba-blue-soft:   oklch(0.85 0.10 240);
+  --ba-gold:        oklch(0.85 0.16 90);       /* 暖金 */
+  --ba-gold-deep:   oklch(0.72 0.18 70);
+  --ba-yellow-btn:  oklch(0.88 0.18 90);       /* 大按钮黄 */
+  --ba-yellow-btn-deep: oklch(0.76 0.20 75);
+  --ba-red:         oklch(0.62 0.22 25);       /* STRIKER 红 */
+  --ba-text-1:      oklch(0.22 0.020 250);     /* 黑/深灰 */
+  --ba-text-2:      oklch(0.45 0.030 250);
+  --ba-text-3:      oklch(0.65 0.025 245);
+  --ba-paper:       oklch(0.99 0.005 80);      /* 纸卡白 */
+  --ba-cyan:        oklch(0.78 0.13 200);      /* halo 青 */
+}
+
+/* ============ 整体背景: 浅蓝光带 ============ */
+
+html, body {
+  background: var(--ba-bg-1) !important;
+  color: var(--ba-text-1) !important;
+}
+
+.main-content {
+  background:
+    linear-gradient(135deg, oklch(0.97 0.025 240) 0%, oklch(0.94 0.045 220) 100%) !important;
+  position: relative;
+}
+
+/* 对角光带装饰 */
+.main-content::before {
+  content: '';
+  position: fixed;
+  top: var(--top-h);
+  left: 0;
+  right: 0;
+  bottom: var(--nav-h);
+  pointer-events: none;
+  z-index: 0;
+  background:
+    linear-gradient(135deg,
+      transparent 35%,
+      oklch(0.85 0.10 220 / 0.18) 35.5%,
+      oklch(0.85 0.10 220 / 0.18) 36%,
+      transparent 36.5%,
+      transparent 60%,
+      oklch(0.85 0.10 220 / 0.12) 60.5%,
+      oklch(0.85 0.10 220 / 0.12) 61%,
+      transparent 61.5%
+    );
+}
+
+/* 隐藏旧装饰 */
+.ambient-bg { display: none !important; }
+
+/* ============ 顶部 HUD 重做 ============ */
+
+.top-bar {
+  background: linear-gradient(180deg, oklch(1 0 0) 0%, oklch(0.97 0.020 240) 100%) !important;
+  border-bottom: none !important;
+  height: 56px !important;
+  backdrop-filter: none !important;
+  box-shadow: 0 2px 12px oklch(0.6 0.10 240 / 0.08);
+}
+
+.top-bar-inner {
+  padding: 0 12px !important;
+}
+
+/* Brand 改成标题样式 + 金色下划线 */
+.brand-block {
+  position: relative;
+  padding-bottom: 6px;
+}
+
+.brand-main {
+  font-family: var(--f-display) !important;
+  font-weight: 800 !important;
+  font-size: 18px !important;
+  color: var(--ba-text-1) !important;
+  background: none !important;
+  -webkit-text-fill-color: var(--ba-text-1) !important;
+  filter: none !important;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.brand-sub {
+  font-family: var(--f-warn) !important;
+  font-size: 8px !important;
+  letter-spacing: 0.3em !important;
+  color: var(--ba-text-3) !important;
+  margin-top: 3px !important;
+  line-height: 1;
+}
+
+/* 金色下划线 - Blue Archive 签名 */
+.brand-block::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 75%;
+  height: 3px;
+  background: linear-gradient(90deg, var(--ba-gold-deep), var(--ba-gold));
+  border-radius: 2px;
+  box-shadow: 0 0 8px oklch(0.85 0.16 90 / 0.5);
+}
+
+/* 资源 chips */
+.hud-chip {
+  background: oklch(1 0 0) !important;
+  border: 1.5px solid oklch(0.88 0.03 240) !important;
+  color: var(--ba-text-1) !important;
+  height: 32px !important;
+  padding: 0 10px 0 8px !important;
+  clip-path: none !important;
+  border-radius: 999px !important;
+  box-shadow: 0 2px 4px oklch(0.6 0.10 240 / 0.08);
+  font-family: var(--f-num) !important;
+  font-weight: 800 !important;
+  font-size: 13px !important;
+}
+
+.hud-chip .hud-icon {
+  filter: none !important;
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.hud-pity .hud-icon { color: oklch(0.55 0.22 290) !important; }
+.hud-ticket .hud-icon { color: oklch(0.72 0.18 90) !important; }
+.hud-coin .hud-icon { color: oklch(0.65 0.18 245) !important; }
+
+.hud-pity .hud-slash,
+.hud-pity .hud-max { color: var(--ba-text-3) !important; opacity: 1 !important; }
+
+/* ============ 主页 (抽卡 banner) - Blue Archive 布局 ============ */
+
+#page-gacha.tab-page {
+  padding: 0 !important;
+  max-width: 100% !important;
+  position: relative;
+  z-index: 1;
+}
+
+/* Banner = 全宽 hero 区 */
+.banner-card {
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.banner-card::before,
+.banner-card::after { display: none !important; }
+
+/* Character立绘 容器 - 上半部分 */
+.banner-img-layer {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 42vh !important;
+  min-height: 300px;
+  max-height: 420px;
+  background-size: cover !important;
+  background-position: center 20% !important;
+  transform: none !important;
+  animation: none !important;
+  z-index: 1;
+  /* 加底部fade */
+  -webkit-mask-image: linear-gradient(180deg, #000 75%, transparent 100%);
+          mask-image: linear-gradient(180deg, #000 75%, transparent 100%);
+}
+
+.banner-vignette {
+  position: absolute !important;
+  inset: 0 !important;
+  height: 42vh !important;
+  background:
+    radial-gradient(ellipse at 50% 30%,
+      oklch(0.95 0.04 220 / 0.3) 0%,
+      oklch(0.92 0.06 220 / 0.45) 60%,
+      oklch(0.88 0.10 220 / 0.55) 100%
+    ) !important;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ============ HALO (Blue Archive 签名元素) ============ */
+
+.character-halo {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 110px;
+  height: 110px;
+  z-index: 3;
+  pointer-events: none;
+  animation: halo-glow 3.5s ease-in-out infinite alternate, halo-spin 30s linear infinite;
+}
+
+@keyframes halo-glow {
+  0% { filter: drop-shadow(0 0 12px oklch(0.78 0.13 200 / 0.7)) brightness(1); }
+  100% { filter: drop-shadow(0 0 24px oklch(0.78 0.13 200 / 0.95)) brightness(1.15); }
+}
+
+@keyframes halo-spin {
+  0% { transform: translateX(-50%) rotateX(70deg) rotateZ(0deg); }
+  100% { transform: translateX(-50%) rotateX(70deg) rotateZ(360deg); }
+}
+
+/* Banner 内容 - 角色名+meta 在立绘下方 */
+.banner-content {
+  position: relative !important;
+  inset: auto !important;
+  z-index: 2 !important;
+  padding: 0 16px var(--gap-5) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+/* 角色名牌 - 立绘下面 floating 牌子 */
+.banner-meta {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+  flex-direction: row !important;
+  margin-top: -28px;
+  align-self: flex-start;
+  z-index: 4;
+}
+
+.banner-tag {
+  background: linear-gradient(135deg, var(--ba-gold), var(--ba-gold-deep)) !important;
+  border: none !important;
+  padding: 5px 12px !important;
+  border-radius: 999px !important;
+  clip-path: none !important;
+  font-size: 10px !important;
+  letter-spacing: 0.15em !important;
+  color: oklch(0.20 0.10 60) !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 12px oklch(0.85 0.16 90 / 0.4) !important;
+}
+
+.banner-tag .dot {
+  background: oklch(0.30 0.15 25) !important;
+  box-shadow: 0 0 6px oklch(0.30 0.15 25) !important;
+}
+
+.banner-sub {
+  font-family: var(--f-warn) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.3em !important;
+  color: var(--ba-text-2) !important;
+  text-shadow: none !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+/* Banner title - 大标题 + 副标 (Blue Archive 风格) */
+.banner-title {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  margin-bottom: 0 !important;
+  align-items: flex-start;
+  position: relative;
+  padding-bottom: 8px;
+}
+
+.banner-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--ba-gold-deep), var(--ba-gold));
+  border-radius: 2px;
+  box-shadow: 0 0 8px oklch(0.85 0.16 90 / 0.5);
+}
+
+.banner-cn {
+  font-family: var(--f-display) !important;
+  font-weight: 800 !important;
+  font-size: 26px !important;
+  letter-spacing: 1.5px !important;
+  color: var(--ba-text-1) !important;
+  text-shadow: none !important;
+  filter: none !important;
+  line-height: 1.1 !important;
+}
+
+.banner-en {
+  font-family: var(--f-warn) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.4em !important;
+  color: var(--ba-blue-deep) !important;
+  text-shadow: none !important;
+  margin-top: 0 !important;
+}
+
+.banner-desc {
+  font-size: 12px !important;
+  color: var(--ba-text-2) !important;
+  letter-spacing: 0 !important;
+  text-shadow: none !important;
+  margin-top: 4px !important;
+}
+
+.banner-desc::before,
+.banner-desc::after { display: none !important; }
+
+/* ============ Paper Info Card ============ */
+
+.info-paper {
+  background: var(--ba-paper);
+  border: 1px solid oklch(0.88 0.03 240);
+  border-radius: 4px;
+  padding: 14px 16px;
+  margin: 10px 16px;
+  position: relative;
+  box-shadow:
+    0 4px 16px oklch(0.6 0.10 240 / 0.12),
+    inset 0 1px 0 oklch(1 0 0);
+  /* paper-clip 角 */
+}
+
+.info-paper::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 16px;
+  width: 14px;
+  height: 22px;
+  border: 2px solid oklch(0.72 0.04 250);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+}
+
+.info-paper-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--f-warn);
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  color: var(--ba-text-3);
+  margin-bottom: 6px;
+}
+
+.info-paper-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  position: relative;
+}
+
+.info-paper-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px dashed oklch(0.85 0.03 240);
+  font-size: 12px;
+}
+
+.info-paper-row:last-child { border-bottom: none; }
+
+.info-paper-row-label {
+  color: var(--ba-text-2);
+  font-weight: 600;
+}
+
+.info-paper-row-value {
+  color: var(--ba-text-1);
+  font-family: var(--f-num);
+  font-weight: 800;
+}
+
+.info-paper-row-value.is-r { color: var(--r-color); }
+.info-paper-row-value.is-sr { color: var(--sr-color); }
+.info-paper-row-value.is-ssr { color: var(--ba-gold-deep); }
+
+.info-paper-date {
+  font-family: var(--f-num);
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--ba-red);
+  margin: 6px 0;
+}
+
+/* ============ 抽卡按钮 - Blue Archive 大黄按钮 ============ */
+
+.pull-actions {
+  display: grid !important;
+  grid-template-columns: 1fr 1.6fr !important;
+  gap: 10px !important;
+  margin: 6px 16px 16px !important;
+  position: relative;
+}
+
+.pull-actions::before {
+  display: none !important;
+}
+
+.pull-btn {
+  height: 72px !important;
+  border-radius: 12px !important;
+  clip-path: none !important;
+  overflow: visible !important;
+}
+
+.pull-btn-bg::before {
+  background: linear-gradient(105deg, transparent 35%, oklch(1 0 0 / 0.3) 50%, transparent 65%) !important;
+  background-size: 200% 100% !important;
+}
+
+/* 单抽: 蓝色 */
+.pull-btn-single .pull-btn-bg {
+  background: linear-gradient(180deg, var(--ba-blue), var(--ba-blue-deep)) !important;
+  box-shadow:
+    inset 0 2px 0 oklch(0.78 0.15 245),
+    inset 0 -3px 0 oklch(0.40 0.20 255),
+    0 6px 20px oklch(0.65 0.18 245 / 0.45) !important;
+  border-radius: 12px !important;
+}
+
+.pull-btn-single::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, oklch(0.50 0.20 250 / 0.6), oklch(0.30 0.18 255 / 0.4));
+  z-index: -1;
+}
+
+/* 十连: 大黄按钮 (Blue Archive 主CTA) */
+.pull-btn-ten .pull-btn-bg {
+  background: linear-gradient(180deg, var(--ba-yellow-btn), var(--ba-yellow-btn-deep)) !important;
+  box-shadow:
+    inset 0 2px 0 oklch(0.95 0.15 95),
+    inset 0 -3px 0 oklch(0.62 0.18 65),
+    0 6px 24px oklch(0.85 0.18 85 / 0.55) !important;
+  border-radius: 12px !important;
+}
+
+.pull-btn-ten::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, oklch(0.85 0.18 80 / 0.7), oklch(0.55 0.18 60 / 0.5));
+  z-index: -1;
+}
+
+.pull-btn-bg::after {
+  inset: 4px !important;
+  border: 1px solid oklch(1 0 0 / 0.28) !important;
+  border-radius: 8px !important;
+  clip-path: none !important;
+}
+
+.pull-btn-ten .pull-btn-content {
+  color: oklch(0.20 0.15 60) !important;
+}
+
+.pull-btn-single .pull-btn-content { color: #fff !important; }
+
+.pull-btn-num {
+  font-size: 30px !important;
+  text-shadow: 0 2px 4px oklch(0 0 0 / 0.25) !important;
+  filter: none !important;
+}
+
+.pull-btn-label {
+  font-family: var(--f-display) !important;
+  font-weight: 800 !important;
+  font-size: 15px !important;
+  letter-spacing: 0.08em !important;
+}
+
+.pull-btn-cost {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+.pull-btn-badge {
+  background: linear-gradient(135deg, var(--ba-red), oklch(0.52 0.24 20)) !important;
+  color: #fff !important;
+  font-size: 9px !important;
+  letter-spacing: 0.15em !important;
+  font-weight: 800 !important;
+  clip-path: none !important;
+  border-radius: 999px !important;
+  padding: 3px 8px !important;
+  top: -8px !important;
+  right: -4px !important;
+  border: 1.5px solid oklch(1 0 0);
+  box-shadow: 0 4px 10px oklch(0.62 0.22 25 / 0.45) !important;
+}
+
+/* ============ 立绘下方角色名片 ============ */
+
+.character-namecard {
+  position: absolute;
+  top: calc(42vh - 78px);
+  left: 12px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100% - 24px);
+}
+
+.character-namecard-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  background: linear-gradient(135deg, var(--ba-gold), var(--ba-gold-deep));
+  border-radius: 999px;
+  font-family: var(--f-warn);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: oklch(0.20 0.10 60);
+  font-weight: 800;
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px oklch(0.85 0.16 90 / 0.4);
+}
+
+.character-namecard-name {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 18px;
+  color: #fff;
+  text-shadow:
+    0 2px 4px oklch(0 0 0 / 0.4),
+    0 0 8px oklch(0 0 0 / 0.3);
+  letter-spacing: 1px;
+}
+
+.character-namecard-stars {
+  display: inline-flex;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--ba-gold);
+  filter: drop-shadow(0 1px 2px oklch(0 0 0 / 0.4));
+}
+
+/* ============ 装饰: 立绘背景的diagonal 光带 ============ */
+
+.banner-deco-streaks {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 42vh;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg,
+      transparent 20%,
+      oklch(0.78 0.13 200 / 0.18) 20.5%,
+      oklch(0.78 0.13 200 / 0.18) 21.5%,
+      transparent 22%,
+      transparent 70%,
+      oklch(0.78 0.13 200 / 0.12) 70.5%,
+      oklch(0.78 0.13 200 / 0.12) 71%,
+      transparent 71.5%
+    );
+}
+
+.banner-deco-sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ============ 隐藏旧 rate/progress cards 在主页 ============ */
+
+#page-gacha .rate-card,
+#page-gacha .collection-progress-card,
+#page-gacha .char-preview-section {
+  display: none !important;
+}
+
+/* 隐藏 banner-title/desc 因为 namecard 已经覆盖 */
+#page-gacha .banner-title,
+#page-gacha .banner-desc {
+  display: none !important;
+}
+
+/* 改成 banner-meta 紧凑 + namecard 协同 */
+.banner-content {
+  padding-top: 8px !important;
+}
+
+#page-gacha .banner-meta {
+  margin-top: 6px !important;
+}
+
+/* info-paper 紧凑化 */
+.info-paper {
+  margin: 8px 14px !important;
+  padding: 10px 14px !important;
+}
+
+.info-paper-row {
+  padding: 5px 0 !important;
+  font-size: 11px !important;
+}
+
+.info-paper-eyebrow {
+  font-size: 8px !important;
+  margin-bottom: 4px !important;
+}
+
+.info-paper-date {
+  font-size: 10px !important;
+  margin: 2px 0 6px !important;
+}
+
+.pull-actions {
+  margin: 4px 14px 12px !important;
+}
+
+/* ============ 底部 nav - Blue Archive 风格 ============ */
+
+.bottom-nav {
+  background: linear-gradient(180deg, oklch(0.97 0.020 240) 0%, oklch(0.93 0.040 235) 100%) !important;
+  border-top: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 -4px 18px oklch(0.65 0.10 240 / 0.12);
+  position: fixed !important;
+}
+
+.bottom-nav::before {
+  display: none !important;
+}
+
+.nav-btn {
+  color: var(--ba-text-3) !important;
+}
+
+.nav-btn .nav-icon {
+  width: 24px !important;
+  height: 24px !important;
+}
+
+.nav-btn.is-active {
+  color: var(--ba-blue-deep) !important;
+}
+
+.nav-btn.is-active .nav-icon {
+  filter: drop-shadow(0 2px 6px oklch(0.65 0.18 245 / 0.5)) !important;
+}
+
+.nav-btn.is-active .nav-label {
+  color: var(--ba-blue-deep) !important;
+  text-shadow: none !important;
+  font-weight: 800 !important;
+}
+
+.nav-glow {
+  background: radial-gradient(circle, var(--ba-blue) 0%, transparent 65%) !important;
+}
+
+.nav-btn.is-active .nav-glow {
+  opacity: 0.25 !important;
+}
+
+/* Active 状态加金色下划线 (Blue Archive 签名) */
+.nav-btn.is-active::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--ba-gold-deep), var(--ba-gold));
+  border-radius: 2px;
+  box-shadow: 0 0 6px oklch(0.85 0.16 90 / 0.6);
+}
+
+/* ============ 响应式 ============ */
+
+@media (max-height: 720px) {
+  .banner-img-layer { height: 50vh !important; min-height: 320px; }
+  .banner-vignette { height: 50vh !important; }
+  .banner-deco-streaks { height: 50vh; }
+  .character-namecard { top: calc(50vh - 84px); }
+  .character-halo { width: 90px; height: 90px; }
+}

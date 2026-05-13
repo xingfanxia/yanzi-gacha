@@ -1,0 +1,576 @@
+/* ============================================================
+   组件: 图鉴 / 角色画廊 / 卡牌详情 / 海报
+   ============================================================ */
+
+/* ============================================================
+   图鉴卡 (Album Card - Blue Archive 头像卡风格)
+   ============================================================ */
+
+.album-card {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background: linear-gradient(180deg, oklch(0.85 0.10 220) 0%, oklch(0.70 0.16 240) 100%);
+  box-shadow: 0 4px 12px oklch(0.30 0.08 250 / 0.25);
+  cursor: pointer;
+  isolation: isolate;
+  transition: transform 160ms var(--e-spring), box-shadow 200ms var(--e-out);
+  aspect-ratio: 3 / 4.4;
+}
+
+.album-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px oklch(0.30 0.08 250 / 0.35);
+}
+
+.album-card:active {
+  transform: scale(0.96);
+}
+
+/* 拍立得 tape 隐藏 */
+.album-tape { display: none; }
+
+.album-photo {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 8%;
+  bottom: 30%;
+  border-radius: 4px;
+  overflow: hidden;
+  background: oklch(0.95 0.02 60);
+  z-index: 1;
+}
+
+.album-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.album-card.is-locked .album-photo img {
+  filter: grayscale(1) brightness(0.4);
+}
+
+.album-lock-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: oklch(0 0 0 / 0.3);
+  z-index: 2;
+}
+
+.album-lock-overlay svg {
+  width: 24px;
+  height: 24px;
+}
+
+.album-rarity {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-family: var(--f-warn);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  padding: 2px 7px;
+  border-radius: 3px;
+  color: #fff;
+  z-index: 3;
+  text-shadow: 0 1px 2px oklch(0 0 0 / 0.3);
+}
+
+.album-rarity-r { background: var(--grad-r); }
+.album-rarity-sr { background: var(--grad-sr); }
+.album-rarity-ssr { background: var(--grad-ssr); color: oklch(0.25 0.10 60); }
+
+.album-card-ssr {
+  background: linear-gradient(180deg, oklch(0.95 0.12 90) 0%, oklch(0.85 0.18 70) 100%);
+  box-shadow:
+    0 0 0 2px oklch(0.88 0.16 85),
+    0 0 24px oklch(0.83 0.17 85 / 0.55),
+    0 4px 14px oklch(0.40 0.18 70 / 0.30);
+}
+.album-card-sr {
+  background: linear-gradient(180deg, oklch(0.85 0.10 305) 0%, oklch(0.68 0.20 295) 100%);
+  box-shadow:
+    0 0 0 1.5px oklch(0.78 0.20 305),
+    0 0 18px oklch(0.68 0.20 305 / 0.45),
+    0 4px 12px oklch(0.30 0.10 290 / 0.30);
+}
+.album-card-r {
+  background: linear-gradient(180deg, oklch(0.85 0.10 220) 0%, oklch(0.70 0.16 240) 100%);
+}
+
+.album-info {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: 4%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.album-name {
+  display: block;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 13px;
+  color: #fff;
+  text-shadow: 0 1px 3px oklch(0.20 0.10 280 / 0.8);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  text-align: center;
+}
+
+.album-progress {
+  width: 80%;
+  height: 3px;
+  background: oklch(1 0 0 / 0.3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.album-progress-fill {
+  height: 100%;
+  background: oklch(0.95 0.10 90);
+  border-radius: 2px;
+  transition: width var(--d-long) var(--e-out);
+  box-shadow: 0 0 6px oklch(0.92 0.13 85 / 0.7);
+}
+
+.album-count {
+  display: block;
+  font-family: var(--f-num);
+  font-weight: 800;
+  font-size: 11px;
+  color: oklch(0.97 0.04 90);
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 2px oklch(0.20 0.10 280 / 0.7);
+}
+
+/* Locked: 全灰 */
+.album-card.is-locked {
+  background: linear-gradient(180deg, oklch(0.78 0.025 280) 0%, oklch(0.55 0.040 280) 100%);
+  box-shadow: 0 2px 8px oklch(0.30 0.03 280 / 0.2);
+}
+.album-card.is-locked .album-name {
+  opacity: 0.6;
+}
+
+/* ============================================================
+   卡牌详情 (Detail Card)
+   ============================================================ */
+
+.detail-content {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-card {
+  position: relative;
+  background: var(--bg-panel);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  box-shadow: var(--sh-lg);
+  border: 1px solid var(--border-1);
+  isolation: isolate;
+}
+
+.detail-card-ssr {
+  border: 2px solid oklch(0.85 0.15 85);
+  box-shadow: var(--glow-ssr), var(--sh-lg);
+}
+.detail-card-sr {
+  border: 2px solid oklch(0.78 0.15 305);
+  box-shadow: var(--glow-sr), var(--sh-lg);
+}
+.detail-card-r {
+  border: 1.5px solid oklch(0.78 0.10 230);
+}
+
+.detail-img-wrap {
+  position: relative;
+  width: 100%;
+  background: oklch(0.94 0.02 60);
+  overflow: hidden;
+}
+
+.detail-img-wrap img {
+  width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  display: block;
+}
+
+.detail-rarity-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-family: var(--f-warn);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  padding: 4px 12px;
+  border-radius: 6px;
+  color: #fff;
+  z-index: 3;
+}
+
+.detail-rarity-r { background: var(--grad-r); }
+.detail-rarity-sr { background: var(--grad-sr); }
+.detail-rarity-ssr {
+  background: var(--grad-ssr);
+  color: oklch(0.25 0.10 60);
+}
+
+.detail-foil {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 25%,
+    oklch(1 0 0 / 0.25) 45%,
+    oklch(0.92 0.13 60 / 0.40) 50%,
+    oklch(1 0 0 / 0.25) 55%,
+    transparent 75%
+  );
+  background-size: 250% 100%;
+  background-position: -150% center;
+  mix-blend-mode: screen;
+  animation: foil-sweep 3.5s ease-in-out infinite;
+}
+
+.detail-info {
+  padding: 18px 20px 22px;
+}
+
+.detail-num {
+  display: block;
+  font-family: var(--f-warn);
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+
+.detail-name {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--text-1);
+  letter-spacing: 0.5px;
+}
+
+.detail-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-2);
+  margin-top: 8px;
+}
+
+.detail-actions {
+  display: flex;
+  gap: var(--gap-2);
+  margin-top: var(--gap-4);
+}
+
+.detail-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 0;
+  border-radius: var(--r-md);
+  background: var(--bg-panel);
+  border: 1.5px solid var(--border-2);
+  color: var(--text-1);
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 13px;
+  transition: transform var(--d-fast) var(--e-spring), background var(--d-fast);
+}
+
+.detail-btn:active {
+  transform: scale(0.95);
+}
+
+.detail-btn svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  fill: none;
+}
+
+.detail-btn-primary {
+  background: var(--grad-accent);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 6px 18px oklch(0.72 0.18 350 / 0.4);
+}
+
+/* ============================================================
+   角色画廊 (Gallery)
+   ============================================================ */
+
+.gallery {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.gallery-header {
+  padding: var(--gap-5);
+  border-radius: var(--r-lg);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-1);
+  margin-bottom: var(--gap-3);
+  box-shadow: var(--sh-md);
+}
+
+.gallery-eyebrow {
+  display: block;
+  font-family: var(--f-warn);
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--accent-1-deep);
+  margin-bottom: 6px;
+}
+
+.gallery-title {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--text-1);
+}
+
+.gallery-desc {
+  font-size: 12px;
+  color: var(--text-2);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+.gallery-progress {
+  margin-top: var(--gap-3);
+  height: 6px;
+  background: var(--border-1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.gallery-progress-fill {
+  height: 100%;
+  background: var(--grad-accent);
+  border-radius: 3px;
+  transition: width var(--d-long) var(--e-out);
+}
+
+.gallery-progress-text {
+  display: block;
+  font-family: var(--f-num);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text-2);
+  margin-top: 6px;
+  letter-spacing: 0.05em;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--gap-2);
+}
+
+.gallery-card {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--bg-card);
+  box-shadow: var(--sh-sm);
+  transition: transform var(--d-fast) var(--e-spring);
+}
+
+.gallery-card:active {
+  transform: scale(0.95);
+}
+
+.gallery-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.gallery-card.is-locked {
+  background: linear-gradient(135deg, oklch(0.94 0.025 350), oklch(0.92 0.030 290));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gallery-lock {
+  opacity: 0.45;
+  color: var(--accent-1-deep);
+}
+
+.gallery-lock svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+}
+
+.gallery-rarity {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  font-family: var(--f-warn);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #fff;
+}
+
+.gallery-rarity.is-locked {
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0.55;
+}
+
+.gallery-rarity-r { background: var(--grad-r); }
+.gallery-rarity-sr { background: var(--grad-sr); }
+.gallery-rarity-ssr { background: var(--grad-ssr); color: oklch(0.25 0.10 60); }
+
+/* ============================================================
+   海报弹窗
+   ============================================================ */
+
+.poster-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: oklch(0.10 0.025 290 / 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gap-5);
+}
+
+.poster-overlay.is-active {
+  display: flex;
+  animation: fade-up var(--d-med) var(--e-out);
+}
+
+.poster-card {
+  max-width: 320px;
+  width: 100%;
+  background: #fff;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: 0 20px 60px oklch(0 0 0 / 0.5);
+}
+
+.poster-card > img {
+  width: 100%;
+  display: block;
+}
+
+.poster-btns {
+  display: flex;
+  gap: var(--gap-2);
+  padding: var(--gap-3);
+}
+
+.poster-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 10px 0;
+  border-radius: var(--r-md);
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 12px;
+  transition: transform var(--d-fast) var(--e-spring);
+  color: #fff;
+}
+
+.poster-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+}
+
+.poster-btn:active {
+  transform: scale(0.94);
+}
+
+.poster-btn-save {
+  background: linear-gradient(135deg, oklch(0.72 0.18 290), oklch(0.62 0.20 295));
+}
+
+.poster-btn-share {
+  background: var(--grad-accent);
+}
+
+.poster-btn-close {
+  background: oklch(0.92 0.015 290);
+  color: var(--text-2);
+}
+
+/* ============================================================
+   商店 - 小按钮组
+   ============================================================ */
+
+.shop-mini-btns {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.shop-btn-mini {
+  padding: 6px 12px;
+  font-size: 11px;
+  border-radius: var(--r-sm);
+}
+
+/* ============================================================
+   响应式
+   ============================================================ */
+
+@media (min-width: 500px) {
+  .gallery-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (max-width: 360px) {
+  .album-name { font-size: 11px; }
+  .album-count { font-size: 9px; }
+}

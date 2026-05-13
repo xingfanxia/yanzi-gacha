@@ -1,210 +1,201 @@
-// UI动画与交互
+/* ============================================================
+   UI 渲染 + 交互（完全使用 createElement / textContent）
+   ============================================================ */
+
+// SVG 解析（避免 innerHTML 字符串注入）
+function makeSvg(svgString) {
+  const doc = new DOMParser().parseFromString(svgString, 'image/svg+xml');
+  const root = doc.documentElement;
+  if (root.nodeName === 'parsererror' || root.querySelector('parsererror')) {
+    return document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  }
+  return root.cloneNode(true);
+}
+
+const SVG_BACK = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>';
+const SVG_DOWNLOAD = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+const SVG_POSTER = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>';
+const SVG_LOCK = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>';
+const SVG_SHARE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>';
+const SVG_LOCK_WHITE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>';
+
 const UI = {
-  // ===== 抽卡结果 =====
+
+  // ===== 抽卡结果：交给 Ceremony 演出引擎 =====
   showPullResults(cards, callback) {
-    const overlay = document.getElementById('pull-overlay');
-    const container = document.getElementById('pull-results');
-    overlay.classList.add('active');
-    container.innerHTML = '';
-
-    const isTenPull = cards.length > 1;
-    const hasRare = cards.some(c => c.rarity !== 'R');
-
-    // 第一步：所有卡快速翻入
-    cards.forEach((card, index) => {
-      const cardEl = this.createCardElement(card);
-      cardEl.style.opacity = '0';
-      cardEl.style.transform = 'scale(0)';
-      container.appendChild(cardEl);
-
-      const delay = isTenPull ? index * 100 : 0;
-      setTimeout(() => {
-        cardEl.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
-        cardEl.style.opacity = '1';
-        cardEl.style.transform = 'scale(1)';
-      }, delay);
-    });
-
-    if (!hasRare) return;
-
-    // 第二步：全部翻完后，悬停一瞬（铺垫紧张感）
-    const flipDone = isTenPull ? cards.length * 100 + 300 : 400;
-
-    setTimeout(() => {
-      // 所有卡微微缩小，制造"还没结束"的感觉
-      container.querySelectorAll('.card').forEach(el => {
-        el.style.transition = 'transform 0.3s ease-in';
-        el.style.transform = 'scale(0.92)';
+    if (typeof Ceremony !== 'undefined') {
+      Ceremony.run(cards, () => {
+        if (typeof callback === 'function') callback();
       });
-    }, flipDone);
-
-    // 第三步：屏幕闪白
-    setTimeout(() => {
-      const flash = document.createElement('div');
-      flash.style.cssText = 'position:fixed;inset:0;background:white;z-index:999;opacity:0;pointer-events:none;transition:opacity 0.1s;';
-      document.body.appendChild(flash);
-      requestAnimationFrame(() => {
-        flash.style.opacity = '0.7';
-        setTimeout(() => {
-          flash.style.opacity = '0';
-          setTimeout(() => flash.remove(), 200);
-        }, 120);
-      });
-    }, flipDone + 500);
-
-    // 第四步：闪白后，稀有卡爆开
-    setTimeout(() => {
-      container.querySelectorAll('.card').forEach((cardEl, i) => {
-        const rarity = cards[i].rarity;
-        if (rarity === 'SSR') {
-          cardEl.style.transition = 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.5s ease, filter 0.5s ease';
-          cardEl.style.transform = 'scale(1.25)';
-          cardEl.style.boxShadow = '0 0 40px rgba(255,215,0,0.5)';
-          cardEl.style.filter = 'brightness(1.3)';
-          cardEl.style.zIndex = '10';
-          cardEl.classList.add('glow-ssr');
-          // 回弹
-          setTimeout(() => {
-            cardEl.style.transition = 'transform 0.4s ease-out';
-            cardEl.style.transform = 'scale(1.18)';
-            cardEl.style.filter = 'brightness(1.1)';
-          }, 500);
-        } else if (rarity === 'SR') {
-          cardEl.style.transition = 'transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.45s ease, filter 0.45s ease';
-          cardEl.style.transform = 'scale(1.18)';
-          cardEl.style.boxShadow = '0 0 25px rgba(232,160,191,0.4)';
-          cardEl.style.filter = 'brightness(1.2)';
-          cardEl.style.zIndex = '5';
-          cardEl.classList.add('glow-sr');
-          setTimeout(() => {
-            cardEl.style.transition = 'transform 0.3s ease-out';
-            cardEl.style.transform = 'scale(1.1)';
-            cardEl.style.filter = 'brightness(1.05)';
-          }, 450);
-        }
-      });
-    }, flipDone + 650);
-
-    overlay.onclick = (e) => {
-      if (e.target === overlay || e.target.classList.contains('pull-results-wrapper')) {
-        overlay.classList.remove('active');
-        container.innerHTML = '';
-        if (callback) callback();
-      }
-    };
+    }
   },
 
-  createCardElement(card) {
-    const el = document.createElement('div');
-    el.className = `card card-${card.rarity.toLowerCase()}`;
-
-    const config = RARITY_CONFIG[card.rarity];
-
-    el.innerHTML = `
-      <div class="card-inner">
-        <div class="card-front">
-          <img src="${card.image}" alt="${card.characterName}" loading="lazy">
-          <div class="card-info">
-            <span class="card-rarity" style="background: ${config.gradient}">${config.label}</span>
-            <span class="card-name">${card.characterName}</span>
-          </div>
-          ${card.isDuplicate ? `<div class="card-duplicate">重复 +${card.coinValue}金币</div>` : ''}
-        </div>
-      </div>
-    `;
-
-    el.onclick = (e) => {
-      e.stopPropagation();
-      this.showCardDetail(card);
+  // ===== 顶部状态栏 =====
+  updateStatusBar() {
+    const state = GameState.get();
+    const set = (id, val) => {
+      const e = document.getElementById(id);
+      if (e) e.textContent = val;
     };
+    set('ticket-count', state.tickets);
+    set('coin-count', state.coins);
+    set('pity-count', state.pityCount);
+    set('pity-count-2', `${state.pityCount}/90`);
 
-    return el;
+    const totalCards = (typeof getAllCards === 'function') ? getAllCards().length : 150;
+    set('collection-count', state.collection.length);
+    set('collection-total', totalCards);
+
+    const pityFill = document.getElementById('pity-progress-bar');
+    if (pityFill) pityFill.style.width = `${Math.min(100, (state.pityCount / 90) * 100)}%`;
+    const cpFill = document.getElementById('collection-progress-fill');
+    if (cpFill) cpFill.style.width = `${Math.min(100, totalCards > 0 ? (state.collection.length / totalCards) * 100 : 0)}%`;
   },
 
-  // ===== 卡牌详情（带保存/分享） =====
+  // ===== 卡牌详情 =====
   showCardDetail(card) {
     const overlay = document.getElementById('detail-overlay');
     const content = document.getElementById('detail-content');
-    const config = RARITY_CONFIG[card.rarity];
+    if (!overlay || !content) return;
 
-    content.innerHTML = `
-      <button class="back-btn" onclick="document.getElementById('detail-overlay').classList.remove('active')">
-        <svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-      </button>
-      <div class="detail-card">
-        <div class="detail-img-wrap">
-          <img src="${card.image}" alt="${card.characterName}">
-          <span class="detail-rarity-badge" style="background:${config.gradient}">${config.label}</span>
-        </div>
-        <div class="detail-info">
-          <h2>${card.characterName}</h2>
-          <p class="detail-desc">${card.description}</p>
-          <div class="action-bar">
-            <button class="action-btn" onclick="UI.saveImage('${card.image.replace(/'/g, "\\'")}', '${card.characterName}_${card.rarity}')">
-              <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              保存图片
-            </button>
-            <button class="action-btn primary" onclick="UI.generatePoster('${card.image.replace(/'/g, "\\'")}', '${card.characterName}', '${card.rarity}', '${card.description.replace(/'/g, "\\'")}')">
-              <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-              生成海报
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
+    while (content.firstChild) content.removeChild(content.firstChild);
 
-    overlay.classList.add('active');
+    // 返回按钮
+    const back = $el('button', { cls: 'back-btn', attr: { 'aria-label': '返回' } });
+    back.appendChild(makeSvg(SVG_BACK));
+    back.addEventListener('click', () => overlay.classList.remove('is-active'));
+    content.appendChild(back);
+
+    const detailCard = $el('div', { cls: 'detail-card' });
+    detailCard.classList.add(`detail-card-${String(card.rarity).toLowerCase()}`);
+
+    // 大图
+    const imgWrap = $el('div', { cls: 'detail-img-wrap' });
+    imgWrap.appendChild($el('img', {
+      attr: { src: card.image, alt: card.characterName || '' }
+    }));
+    imgWrap.appendChild($el('span', {
+      cls: `detail-rarity-badge detail-rarity-${String(card.rarity).toLowerCase()}`,
+      text: card.rarity
+    }));
+    if (card.rarity === 'SSR') {
+      imgWrap.appendChild($el('span', { cls: 'detail-foil' }));
+    }
+    detailCard.appendChild(imgWrap);
+
+    // 信息
+    const info = $el('div', { cls: 'detail-info' });
+    info.appendChild($el('span', {
+      cls: 'detail-num',
+      text: `No.${String((card.imageIndex || 0) + 1).padStart(3, '0')}  ·  YANZI STUDIO`
+    }));
+    info.appendChild($el('h2', { cls: 'detail-name', text: card.characterName || '' }));
+    info.appendChild($el('p', { cls: 'detail-desc', text: card.description || '' }));
+
+    const actions = $el('div', { cls: 'detail-actions' });
+
+    const saveBtn = $el('button', { cls: 'detail-btn' });
+    saveBtn.appendChild(makeSvg(SVG_DOWNLOAD));
+    saveBtn.appendChild($el('span', { text: '保存图片' }));
+    saveBtn.addEventListener('click', () =>
+      UI.saveImage(card.image, `${card.characterName}_${card.rarity}`));
+    actions.appendChild(saveBtn);
+
+    const posterBtn = $el('button', { cls: 'detail-btn detail-btn-primary' });
+    posterBtn.appendChild(makeSvg(SVG_POSTER));
+    posterBtn.appendChild($el('span', { text: '生成海报' }));
+    posterBtn.addEventListener('click', () =>
+      UI.generatePoster(card.image, card.characterName, card.rarity, card.description || ''));
+    actions.appendChild(posterBtn);
+
+    info.appendChild(actions);
+    detailCard.appendChild(info);
+    content.appendChild(detailCard);
+
+    overlay.classList.add('is-active');
     overlay.onclick = (e) => {
-      if (e.target === overlay) overlay.classList.remove('active');
+      if (e.target === overlay) overlay.classList.remove('is-active');
     };
   },
 
-  // ===== 角色画廊（无保存分享按钮） =====
+  // ===== 角色画廊 =====
   showCharacterGallery(char) {
     const overlay = document.getElementById('detail-overlay');
     const content = document.getElementById('detail-content');
-    const state = GameState.get();
-    const progress = GachaEngine.getCharacterProgress(char.id);
+    if (!overlay || !content) return;
 
+    const progress = GachaEngine.getCharacterProgress(char.id);
     const allCards = GachaEngine.getCollectedCardsForCharacter(char.id);
 
-    const cardsHtml = allCards.map(card => {
-      const config = RARITY_CONFIG[card.rarity];
+    while (content.firstChild) content.removeChild(content.firstChild);
+
+    const back = $el('button', { cls: 'back-btn' });
+    back.appendChild(makeSvg(SVG_BACK));
+    back.addEventListener('click', () => overlay.classList.remove('is-active'));
+    content.appendChild(back);
+
+    const gallery = $el('div', { cls: 'gallery' });
+
+    const header = $el('div', { cls: 'gallery-header' });
+    header.appendChild($el('span', {
+      cls: 'gallery-eyebrow',
+      text: `COLLECTION / ${String(char.id).toUpperCase()}`
+    }));
+    header.appendChild($el('h2', { cls: 'gallery-title', text: char.name }));
+    header.appendChild($el('p', { cls: 'gallery-desc', text: char.description }));
+
+    const progressBar = $el('div', { cls: 'gallery-progress' });
+    progressBar.appendChild($el('div', {
+      cls: 'gallery-progress-fill',
+      style: `width: ${progress.percent}%;`
+    }));
+    header.appendChild(progressBar);
+    header.appendChild($el('span', {
+      cls: 'gallery-progress-text',
+      text: `已收集 ${progress.collected} / ${progress.total}`
+    }));
+    gallery.appendChild(header);
+
+    const grid = $el('div', { cls: 'gallery-grid' });
+    allCards.forEach((card) => {
+      const item = $el('div', { cls: 'gallery-card' });
       if (card.collected) {
-        const imgSrc = card.src.replace(/'/g, "\\'");
-        return `<div class="gallery-card" onclick="UI.showCardDetail({image:'${imgSrc}',characterName:'${char.name}',rarity:'${card.rarity}',description:'${char.description.replace(/'/g, "\\'")}',characterId:'${char.id}',imageIndex:${card.imageIndex}})">
-          <img src="${card.src}" loading="lazy">
-          <span class="gallery-rarity-tag" style="background:${config.gradient}">${config.label}</span>
-        </div>`;
+        item.appendChild($el('img', {
+          attr: { src: card.src, alt: char.name, loading: 'lazy' }
+        }));
+        item.appendChild($el('span', {
+          cls: `gallery-rarity gallery-rarity-${String(card.rarity).toLowerCase()}`,
+          text: card.rarity
+        }));
+        item.addEventListener('click', () => {
+          UI.showCardDetail({
+            image: card.src,
+            characterName: char.name,
+            rarity: card.rarity,
+            description: char.description,
+            characterId: char.id,
+            imageIndex: card.imageIndex
+          });
+        });
+      } else {
+        item.classList.add('is-locked');
+        const lock = $el('div', { cls: 'gallery-lock' });
+        lock.appendChild(makeSvg(SVG_LOCK));
+        item.appendChild(lock);
+        item.appendChild($el('span', {
+          cls: `gallery-rarity gallery-rarity-${String(card.rarity).toLowerCase()} is-locked`,
+          text: card.rarity
+        }));
       }
-      return `<div class="gallery-card locked">
-        <div class="lock-icon-wrap" style="color:${config.color}">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-        </div>
-        <span class="gallery-rarity-tag locked-tag" style="background:${config.gradient};opacity:0.5">${config.label}</span>
-      </div>`;
-    }).join('');
+      grid.appendChild(item);
+    });
 
-    content.innerHTML = `
-      <button class="back-btn" onclick="document.getElementById('detail-overlay').classList.remove('active')">
-        <svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-      </button>
-      <div class="gallery">
-        <div class="gallery-header">
-          <h2>${char.name}</h2>
-          <p class="gallery-subtitle">${char.description}</p>
-          <div class="gallery-progress-bar">
-            <div class="gallery-progress-fill" style="width:${progress.percent}%"></div>
-          </div>
-          <span class="gallery-progress-text">收集 ${progress.collected} / ${progress.total}</span>
-        </div>
-        <div class="gallery-grid">${cardsHtml}</div>
-      </div>
-    `;
+    gallery.appendChild(grid);
+    content.appendChild(gallery);
 
-    overlay.classList.add('active');
+    overlay.classList.add('is-active');
     overlay.onclick = (e) => {
-      if (e.target === overlay) overlay.classList.remove('active');
+      if (e.target === overlay) overlay.classList.remove('is-active');
     };
   },
 
@@ -212,9 +203,9 @@ const UI = {
   saveImage(imgSrc, filename) {
     const link = document.createElement('a');
     link.href = imgSrc;
-    link.download = filename + '.jpg';
+    link.download = (filename || 'image') + '.jpg';
     link.target = '_blank';
-    if (imgSrc.startsWith('img/')) {
+    if (typeof imgSrc === 'string' && imgSrc.startsWith('img/')) {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -223,13 +214,13 @@ const UI = {
     }
   },
 
-  // ===== 生成海报（修复变形） =====
+  // ===== 海报生成 =====
   generatePoster(imgSrc, name, rarity, description) {
     const canvas = document.getElementById('poster-canvas');
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const config = RARITY_CONFIG[rarity];
-    const rarityColors = { SSR: '#FFD700', SR: '#E8A0BF', R: '#89CFF0' };
-    const color = rarityColors[rarity] || '#E8A0BF';
+    const rarityColors = { SSR: '#FFC940', SR: '#B7A2FF', R: '#7DB7FF' };
+    const color = rarityColors[rarity] || '#FFC940';
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -238,44 +229,39 @@ const UI = {
       canvas.width = W;
       canvas.height = H;
 
-      // 背景 - 甜美渐变
-      const bgGrad = ctx.createLinearGradient(0, 0, W, H);
-      bgGrad.addColorStop(0, '#FFF0F5');
-      bgGrad.addColorStop(0.5, '#FFF5F8');
-      bgGrad.addColorStop(1, '#FFF0F5');
+      // 背景渐变
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+      bgGrad.addColorStop(0, '#FFE8F1');
+      bgGrad.addColorStop(0.5, '#FFF8F0');
+      bgGrad.addColorStop(1, '#F5E8FF');
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, W, H);
 
-      // 装饰圆点
-      ctx.fillStyle = 'rgba(255,182,193,0.15)';
-      for (let i = 0; i < 20; i++) {
-        const x = Math.random() * W;
-        const y = Math.random() * H;
-        const r = 3 + Math.random() * 8;
+      ctx.fillStyle = 'rgba(255,182,200,0.18)';
+      for (let i = 0; i < 16; i++) {
         ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.arc(Math.random() * W, Math.random() * H, 3 + Math.random() * 10, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // 卡片区域 - 白色圆角卡片
-      const cardX = 30, cardY = 30, cardW = W - 60, cardH = 700;
+      // 拍立得卡
+      const cardX = 45, cardY = 60, cardW = W - 90, cardH = 880;
       ctx.fillStyle = '#FFFFFF';
-      ctx.shadowColor = 'rgba(255,105,180,0.15)';
-      ctx.shadowBlur = 30;
-      ctx.shadowOffsetY = 8;
-      this.roundRect(ctx, cardX, cardY, cardW, cardH, 24);
+      ctx.shadowColor = 'rgba(50,30,60,0.18)';
+      ctx.shadowBlur = 35;
+      ctx.shadowOffsetY = 10;
+      this.roundRect(ctx, cardX, cardY, cardW, cardH, 12);
       ctx.fill();
       ctx.shadowBlur = 0;
       ctx.shadowOffsetY = 0;
 
-      // 主图 - 保持原始宽高比，不变形
-      const padding = 20;
-      const imgAreaW = cardW - padding * 2;
-      const imgAreaH = cardH - padding * 2;
+      const padX = 36, padTop = 36, padBottom = 200;
+      const imgAreaW = cardW - padX * 2;
+      const imgAreaH = cardH - padTop - padBottom;
       const imgRatio = img.width / img.height;
       const areaRatio = imgAreaW / imgAreaH;
 
-      let drawW, drawH, drawX, drawY;
+      let drawW, drawH;
       if (imgRatio > areaRatio) {
         drawW = imgAreaW;
         drawH = imgAreaW / imgRatio;
@@ -283,74 +269,85 @@ const UI = {
         drawH = imgAreaH;
         drawW = imgAreaH * imgRatio;
       }
-      drawX = cardX + padding + (imgAreaW - drawW) / 2;
-      drawY = cardY + padding + (imgAreaH - drawH) / 2;
+      const drawX = cardX + padX + (imgAreaW - drawW) / 2;
+      const drawY = cardY + padTop + (imgAreaH - drawH) / 2;
 
-      // 图片裁切为圆角
       ctx.save();
-      this.roundRect(ctx, cardX + padding, cardY + padding, imgAreaW, imgAreaH, 16);
+      this.roundRect(ctx, cardX + padX, cardY + padTop, imgAreaW, imgAreaH, 4);
       ctx.clip();
+      ctx.fillStyle = '#F5EFE6';
+      ctx.fillRect(cardX + padX, cardY + padTop, imgAreaW, imgAreaH);
       ctx.drawImage(img, drawX, drawY, drawW, drawH);
       ctx.restore();
 
       // 稀有度标签
-      const tagW = 64, tagH = 30;
-      const tagX = cardX + cardW - tagW - 20;
-      const tagY = cardY + 20;
+      const tagW = 70, tagH = 32;
+      const tagX = cardX + cardW - tagW - 30;
+      const tagY = cardY + 30;
       ctx.fillStyle = color;
-      this.roundRect(ctx, tagX, tagY, tagW, tagH, 8);
+      this.roundRect(ctx, tagX, tagY, tagW, tagH, 6);
       ctx.fill();
-      ctx.fillStyle = rarity === 'SSR' ? '#000' : '#FFF';
-      ctx.font = 'bold 16px -apple-system, sans-serif';
+      ctx.fillStyle = rarity === 'SSR' ? '#3D2A0A' : '#FFFFFF';
+      ctx.font = '700 16px "Bebas Neue", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(rarity, tagX + tagW / 2, tagY + tagH / 2);
+      ctx.fillText(rarity, tagX + tagW / 2, tagY + tagH / 2 + 1);
 
-      // 角色名
-      const textY = cardY + cardH + 30;
+      // 编号
+      const captionY = cardY + cardH - padBottom + 28;
+      ctx.fillStyle = '#9B8EA8';
+      ctx.font = '600 13px "Bebas Neue", sans-serif';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
-      ctx.fillStyle = '#2D2D3A';
-      ctx.font = 'bold 34px -apple-system, "PingFang SC", sans-serif';
-      ctx.fillText(name, 50, textY);
+      ctx.fillText('No.001  ·  YANZI STUDIO', cardX + padX, captionY);
 
-      // 描述
-      ctx.fillStyle = '#9B8EA8';
-      ctx.font = '18px -apple-system, "PingFang SC", sans-serif';
-      const descLines = this.wrapText(ctx, description, W - 100, 18);
+      ctx.fillStyle = '#2D2240';
+      ctx.font = '700 38px "Caveat", "M PLUS Rounded 1c", sans-serif';
+      ctx.fillText(name, cardX + padX, captionY + 24);
+
+      ctx.fillStyle = '#7B6E8C';
+      ctx.font = '400 16px "Outfit", sans-serif';
+      const descLines = this.wrapText(ctx, description, cardW - padX * 2);
       descLines.forEach((line, i) => {
-        ctx.fillText(line, 50, textY + 46 + i * 28);
+        ctx.fillText(line, cardX + padX, captionY + 78 + i * 24);
       });
 
-      // 分隔线
-      const lineY = H - 180;
-      ctx.strokeStyle = 'rgba(232,160,191,0.3)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(50, lineY);
-      ctx.lineTo(W - 50, lineY);
-      ctx.stroke();
+      // 胶带
+      ctx.save();
+      ctx.translate(W / 2, cardY - 10);
+      ctx.rotate(-0.04);
+      ctx.fillStyle = 'rgba(247,217,164,0.75)';
+      ctx.fillRect(-90, 0, 180, 28);
+      ctx.restore();
 
-      // QR码区域
-      const qrSize = 110;
-      const qrX = W - 50 - qrSize;
-      const qrY = lineY + 20;
+      // 底部
+      ctx.fillStyle = '#1A0F2A';
+      ctx.fillRect(0, H - 200, W, 200);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '900 32px "M PLUS Rounded 1c", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('妍子写真俱乐部', 50, H - 160);
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = '500 14px "Bebas Neue", sans-serif';
+      ctx.fillText('YANZI · PHOTO CLUB', 50, H - 122);
+      ctx.fillStyle = 'rgba(255,255,255,0.65)';
+      ctx.font = '400 12px "Outfit", sans-serif';
+      ctx.fillText('扫码加入俱乐部 · 收集你的本命角色', 50, H - 90);
 
       try {
         const qr = qrcode(0, 'M');
         qr.addData(window.location.href);
         qr.make();
         const qrModuleCount = qr.getModuleCount();
+        const qrSize = 116;
+        const qrX = W - 50 - qrSize;
+        const qrY = H - 160;
         const moduleSize = qrSize / qrModuleCount;
-
         ctx.fillStyle = '#FFFFFF';
-        ctx.shadowColor = 'rgba(0,0,0,0.08)';
-        ctx.shadowBlur = 10;
-        this.roundRect(ctx, qrX - 8, qrY - 8, qrSize + 16, qrSize + 16, 12);
+        this.roundRect(ctx, qrX - 8, qrY - 8, qrSize + 16, qrSize + 16, 10);
         ctx.fill();
-        ctx.shadowBlur = 0;
-
-        ctx.fillStyle = '#2D2D3A';
+        ctx.fillStyle = '#1A0F2A';
         for (let row = 0; row < qrModuleCount; row++) {
           for (let col = 0; col < qrModuleCount; col++) {
             if (qr.isDark(row, col)) {
@@ -360,24 +357,11 @@ const UI = {
         }
       } catch (e) {}
 
-      // 左侧品牌文字
-      ctx.fillStyle = '#FF69B4';
-      ctx.font = 'bold 22px -apple-system, "PingFang SC", sans-serif';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      ctx.fillText('妍子 Cosplay', 50, qrY + 5);
-
-      ctx.fillStyle = '#9B8EA8';
-      ctx.font = '14px -apple-system, sans-serif';
-      ctx.fillText('扫码开启抽卡之旅', 50, qrY + 36);
-      ctx.fillText('收集你最爱的角色卡牌', 50, qrY + 56);
-
-      // 底部装饰线
       ctx.strokeStyle = color;
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.moveTo(0, H - 2);
-      ctx.lineTo(W, H - 2);
+      ctx.moveTo(0, H - 4);
+      ctx.lineTo(W, H - 4);
       ctx.stroke();
 
       this.showPosterPreview(canvas.toDataURL('image/jpeg', 0.92));
@@ -402,6 +386,7 @@ const UI = {
   },
 
   wrapText(ctx, text, maxWidth) {
+    if (!text) return [];
     const lines = [];
     let currentLine = '';
     for (const char of text) {
@@ -421,37 +406,43 @@ const UI = {
   showPosterPreview(dataUrl) {
     let el = document.getElementById('poster-overlay');
     if (!el) {
-      el = document.createElement('div');
-      el.id = 'poster-overlay';
-      el.className = 'poster-overlay';
+      el = $el('div', { cls: 'poster-overlay', attr: { id: 'poster-overlay' } });
       document.body.appendChild(el);
     }
+    while (el.firstChild) el.removeChild(el.firstChild);
 
-    el.innerHTML = `
-      <div class="poster-card">
-        <img src="${dataUrl}" id="poster-img">
-        <div class="poster-btns">
-          <button class="poster-btn save" onclick="UI.downloadPoster()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;margin-right:4px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            保存到相册
-          </button>
-          <button class="poster-btn share" onclick="UI.sharePoster()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;margin-right:4px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-            分享给好友
-          </button>
-          <button class="poster-btn close" onclick="document.getElementById('poster-overlay').classList.remove('active')">关闭</button>
-        </div>
-      </div>
-    `;
+    const card = $el('div', { cls: 'poster-card' });
+    card.appendChild($el('img', { attr: { src: dataUrl, id: 'poster-img' } }));
 
-    el.classList.add('active');
+    const btns = $el('div', { cls: 'poster-btns' });
+
+    const saveBtn = $el('button', { cls: 'poster-btn poster-btn-save' });
+    saveBtn.appendChild(makeSvg(SVG_DOWNLOAD));
+    saveBtn.appendChild($el('span', { text: '保存' }));
+    saveBtn.addEventListener('click', () => UI.downloadPoster());
+    btns.appendChild(saveBtn);
+
+    const shareBtn = $el('button', { cls: 'poster-btn poster-btn-share' });
+    shareBtn.appendChild(makeSvg(SVG_SHARE));
+    shareBtn.appendChild($el('span', { text: '分享' }));
+    shareBtn.addEventListener('click', () => UI.sharePoster());
+    btns.appendChild(shareBtn);
+
+    const closeBtn = $el('button', { cls: 'poster-btn poster-btn-close', text: '关闭' });
+    closeBtn.addEventListener('click', () => el.classList.remove('is-active'));
+    btns.appendChild(closeBtn);
+
+    card.appendChild(btns);
+    el.appendChild(card);
+    el.classList.add('is-active');
     el._dataUrl = dataUrl;
   },
 
   downloadPoster() {
     const el = document.getElementById('poster-overlay');
+    if (!el || !el._dataUrl) return;
     const link = document.createElement('a');
-    link.download = '妍子Cosplay海报_' + Date.now() + '.jpg';
+    link.download = '妍子写真_' + Date.now() + '.jpg';
     link.href = el._dataUrl;
     document.body.appendChild(link);
     link.click();
@@ -460,15 +451,16 @@ const UI = {
 
   async sharePoster() {
     const el = document.getElementById('poster-overlay');
+    if (!el) return;
     const dataUrl = el._dataUrl;
 
     if (navigator.share && navigator.canShare) {
       try {
         const response = await fetch(dataUrl);
         const blob = await response.blob();
-        const file = new File([blob], '妍子Cosplay海报.jpg', { type: 'image/jpeg' });
+        const file = new File([blob], '妍子写真.jpg', { type: 'image/jpeg' });
         if (navigator.canShare({ files: [file] })) {
-          await navigator.share({ title: '妍子Cosplay抽卡集', text: '来看看我抽到的卡牌！', files: [file] });
+          await navigator.share({ title: '妍子写真俱乐部', text: '来看看我抽到的写真！', files: [file] });
           return;
         }
       } catch (e) {}
@@ -478,34 +470,23 @@ const UI = {
       const response = await fetch(dataUrl);
       const blob = await response.blob();
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-      alert('海报已复制到剪贴板！可以粘贴到微信/QQ发送');
+      alert('海报已复制到剪贴板！');
     } catch (e) {
       this.downloadPoster();
       alert('海报已保存到本地');
     }
   },
 
-  // ===== 顶部状态栏 =====
-  updateStatusBar() {
-    const state = GameState.get();
-    document.getElementById('ticket-count').textContent = state.tickets;
-    document.getElementById('coin-count').textContent = state.coins;
-    document.getElementById('pity-count').textContent = `${state.pityCount}/90`;
-    document.getElementById('collection-count').textContent = state.collection.length;
-  },
-
-  // ===== 图鉴页 =====
+  // ===== 图鉴 =====
   renderCollection(filter = 'ALL') {
     const grid = document.getElementById('collection-grid');
-    grid.innerHTML = '';
-
-    const state = GameState.get();
+    if (!grid) return;
+    while (grid.firstChild) grid.removeChild(grid.firstChild);
 
     CHARACTERS.forEach(char => {
       const progress = GachaEngine.getCharacterProgress(char.id);
       const allCards = GachaEngine.getCollectedCardsForCharacter(char.id);
 
-      // 按筛选条件过滤
       const hasMatching = filter === 'ALL' || allCards.some(c => c.rarity === filter);
       if (!hasMatching && filter !== 'ALL') return;
 
@@ -513,155 +494,218 @@ const UI = {
       const collectedCount = allCards.filter(c => c.collected).length;
       const isFullyLocked = collectedCount === 0;
 
-      // 判断该角色的最高已收集稀有度
-      let highestCollected = null;
-      if (allCards.some(c => c.collected && c.rarity === 'SSR')) highestCollected = 'SSR';
-      else if (allCards.some(c => c.collected && c.rarity === 'SR')) highestCollected = 'SR';
-      else if (collectedCount > 0) highestCollected = 'R';
+      let highest = null;
+      if (allCards.some(c => c.collected && c.rarity === 'SSR')) highest = 'SSR';
+      else if (allCards.some(c => c.collected && c.rarity === 'SR')) highest = 'SR';
+      else if (collectedCount > 0) highest = 'R';
 
-      const config = highestCollected ? RARITY_CONFIG[highestCollected] : RARITY_CONFIG[allCards[0]?.rarity || 'R'];
+      const item = $el('div', { cls: 'album-card' });
+      if (isFullyLocked) item.classList.add('is-locked');
+      if (highest) item.classList.add(`album-card-${highest.toLowerCase()}`);
 
-      const el = document.createElement('div');
-      el.className = 'collection-card';
-      if (isFullyLocked) el.classList.add('locked');
+      item.appendChild($el('span', { cls: 'album-tape' }));
 
-      el.innerHTML = `
-        <div class="collection-thumb">
-          <img src="${thumbSrc}" alt="${char.name}" loading="lazy">
-          ${isFullyLocked ? '<div class="thumb-lock-overlay"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>' : ''}
-          ${highestCollected ? `<span class="thumb-rarity" style="background:${config.gradient}">${highestCollected}</span>` : ''}
-        </div>
-        <div class="collection-info">
-          <span class="collection-name">${char.name}</span>
-          <div class="collection-progress">
-            <div class="progress-fill" style="width:${progress.percent}%"></div>
-          </div>
-          <span class="collection-count">${progress.collected}/${progress.total}</span>
-        </div>
-      `;
+      const photo = $el('div', { cls: 'album-photo' });
+      photo.appendChild($el('img', {
+        attr: { src: thumbSrc, alt: char.name, loading: 'lazy' }
+      }));
 
-      el.onclick = () => this.showCharacterGallery(char);
-      grid.appendChild(el);
+      if (isFullyLocked) {
+        const lockOverlay = $el('div', { cls: 'album-lock-overlay' });
+        lockOverlay.appendChild(makeSvg(SVG_LOCK_WHITE));
+        photo.appendChild(lockOverlay);
+      }
+      if (highest) {
+        photo.appendChild($el('span', {
+          cls: `album-rarity album-rarity-${highest.toLowerCase()}`,
+          text: highest
+        }));
+      }
+      item.appendChild(photo);
+
+      const info = $el('div', { cls: 'album-info' });
+      info.appendChild($el('span', { cls: 'album-name', text: char.name }));
+      const bar = $el('div', { cls: 'album-progress' });
+      bar.appendChild($el('div', {
+        cls: 'album-progress-fill',
+        style: `width:${progress.percent}%`
+      }));
+      info.appendChild(bar);
+      info.appendChild($el('span', {
+        cls: 'album-count',
+        text: `${progress.collected}/${progress.total}`
+      }));
+      item.appendChild(info);
+
+      item.addEventListener('click', () => this.showCharacterGallery(char));
+      grid.appendChild(item);
     });
   },
 
-  // ===== 任务页 =====
+  // ===== 任务 =====
   renderTasks() {
     const list = document.getElementById('task-list');
+    if (!list) return;
+    while (list.firstChild) list.removeChild(list.firstChild);
+
     const state = GameState.get();
     const today = new Date().toDateString();
 
     const tasks = [
       {
-        id: 'daily-checkin', name: '每日签到', desc: '签到获得1张抽卡券',
+        id: 'daily-checkin', icon: '🌸', name: '每日签到', desc: '签到获得抽卡券',
         reward: '+1 抽卡券', done: state.lastCheckin === today,
         action: () => {
-          if (state.lastCheckin === today) return '今天已签到';
-          state.tickets += 1; state.lastCheckin = today;
-          GameState.save(state); UI.updateStatusBar(); UI.renderTasks();
+          if (state.lastCheckin === today) return;
+          const s = GameState.get();
+          s.tickets += 1;
+          s.lastCheckin = today;
+          GameState.save(s);
+          UI.updateStatusBar();
+          UI.renderTasks();
         }
       },
       {
-        id: 'share-wechat', name: '分享到微信', desc: '分享给好友或朋友圈',
+        id: 'share-wechat', icon: '💬', name: '分享到微信', desc: '分享给好友或朋友圈',
         reward: '+2 抽卡券', done: state.sharedWechat,
         action: () => {
-          if (state.sharedWechat) return '已完成';
+          if (state.sharedWechat) return;
           navigator.clipboard.writeText(window.location.href).then(() => {
-            state.sharedWechat = true; state.tickets += 2;
-            GameState.save(state); UI.updateStatusBar(); UI.renderTasks();
+            const s = GameState.get();
+            s.sharedWechat = true;
+            s.tickets += 2;
+            GameState.save(s);
+            UI.updateStatusBar();
+            UI.renderTasks();
             alert('链接已复制，去微信粘贴分享吧！');
           });
         }
       },
       {
-        id: 'share-qq', name: '分享到QQ', desc: '分享到QQ空间或好友',
+        id: 'share-qq', icon: '🐧', name: '分享到QQ', desc: '分享到QQ空间或好友',
         reward: '+2 抽卡券', done: state.sharedQQ,
         action: () => {
-          if (state.sharedQQ) return '已完成';
+          if (state.sharedQQ) return;
           navigator.clipboard.writeText(window.location.href).then(() => {
-            state.sharedQQ = true; state.tickets += 2;
-            GameState.save(state); UI.updateStatusBar(); UI.renderTasks();
+            const s = GameState.get();
+            s.sharedQQ = true;
+            s.tickets += 2;
+            GameState.save(s);
+            UI.updateStatusBar();
+            UI.renderTasks();
             alert('链接已复制，去QQ粘贴分享吧！');
           });
         }
       },
       {
-        id: 'share-weibo', name: '分享到微博', desc: '分享链接到微博',
+        id: 'share-weibo', icon: '📢', name: '分享到微博', desc: '分享到微博',
         reward: '+2 抽卡券', done: state.sharedWeibo,
         action: () => {
-          if (state.sharedWeibo) return '已完成';
-          const t = encodeURIComponent('快来抽妍子的Cosplay卡牌！');
+          if (state.sharedWeibo) return;
+          const t = encodeURIComponent('快来抽妍子的Cosplay写真！');
           const u = encodeURIComponent(window.location.href);
           window.open(`https://service.weibo.com/share/share.php?title=${t}&url=${u}`, '_blank');
-          setTimeout(() => { state.sharedWeibo = true; state.tickets += 2; GameState.save(state); UI.updateStatusBar(); UI.renderTasks(); }, 2000);
+          setTimeout(() => {
+            const s = GameState.get();
+            s.sharedWeibo = true;
+            s.tickets += 2;
+            GameState.save(s);
+            UI.updateStatusBar();
+            UI.renderTasks();
+          }, 2000);
         }
       },
       {
-        id: 'invite', name: '邀请好友', desc: '分享邀请链接',
+        id: 'invite', icon: '💌', name: '邀请好友', desc: '分享邀请链接',
         reward: '+3 抽卡券', done: false,
         action: () => {
           const url = `${window.location.href}?inviter=${Date.now()}`;
           navigator.clipboard.writeText(url).then(() => {
-            alert('邀请链接已复制！'); state.tickets += 3;
-            GameState.save(state); UI.updateStatusBar(); UI.renderTasks();
+            const s = GameState.get();
+            s.tickets += 3;
+            GameState.save(s);
+            UI.updateStatusBar();
+            UI.renderTasks();
+            alert('邀请链接已复制！');
           });
         }
       }
     ];
 
-    list.innerHTML = tasks.map(task => `
-      <div class="task-item ${task.done ? 'task-done' : ''}">
-        <div class="task-info">
-          <h3>${task.name}</h3>
-          <p>${task.desc}</p>
-          <span class="task-reward">${task.reward}</span>
-        </div>
-        <button class="task-btn ${task.done ? 'btn-done' : ''}"
-                onclick="UI.handleTask('${task.id}')" ${task.done ? 'disabled' : ''}>
-          ${task.done ? '已完成' : '去完成'}
-        </button>
-      </div>
-    `).join('');
+    tasks.forEach(task => {
+      const item = $el('div', { cls: 'task-item' });
+      if (task.done) item.classList.add('is-done');
 
-    this._tasks = tasks;
+      item.appendChild($el('div', { cls: 'task-icon', text: task.icon }));
+
+      const content = $el('div', { cls: 'task-content' });
+      content.appendChild($el('div', { cls: 'task-name', text: task.name }));
+      content.appendChild($el('div', { cls: 'task-desc', text: task.desc }));
+      content.appendChild($el('span', { cls: 'task-reward', text: task.reward }));
+      item.appendChild(content);
+
+      const btn = $el('button', {
+        cls: `task-btn${task.done ? ' is-done' : ''}`,
+        text: task.done ? '已完成' : '去完成'
+      });
+      if (!task.done) btn.addEventListener('click', task.action);
+      item.appendChild(btn);
+
+      list.appendChild(item);
+    });
+
+    const hasUndone = tasks.some(t => !t.done);
+    const dot = document.getElementById('task-dot');
+    if (dot) dot.classList.toggle('is-show', hasUndone);
   },
 
-  handleTask(taskId) {
-    const task = this._tasks?.find(t => t.id === taskId);
-    if (task) task.action();
-  },
-
-  // ===== 商店页 =====
+  // ===== 商店 =====
   renderShop() {
     const list = document.getElementById('shop-list');
+    if (!list) return;
+    while (list.firstChild) list.removeChild(list.firstChild);
+
     const packs = [
-      { id: 'small', name: '初遇之礼', coins: 60, price: '¥6', desc: '60金币，可抽6次' },
-      { id: 'medium', name: '心动礼包', coins: 330, price: '¥30', desc: '330金币，超值加赠' },
-      { id: 'large', name: '挚爱礼盒', coins: 1100, price: '¥98', desc: '1100金币，豪华加赠' }
+      { id: 'small', icon: '🎁', name: '初遇之礼', coins: 60, price: '¥6', desc: '60金币 · 可抽6次' },
+      { id: 'medium', icon: '💖', name: '心动礼包', coins: 330, price: '¥30', desc: '330金币 · 超值加赠' },
+      { id: 'large', icon: '👑', name: '挚爱礼盒', coins: 1100, price: '¥98', desc: '1100金币 · 豪华加赠' }
     ];
 
-    list.innerHTML = packs.map(p => `
-      <div class="shop-item">
-        <div class="shop-info">
-          <h3>${p.name}</h3>
-          <p>${p.desc}</p>
-          <span class="shop-coins">+${p.coins} 金币</span>
-        </div>
-        <button class="shop-btn" onclick="UI.buyPack('${p.id}',${p.coins})">${p.price}</button>
-      </div>
-    `).join('') + `
-      <div class="shop-item">
-        <div class="shop-info">
-          <h3>金币抽卡</h3>
-          <p>使用金币抽卡</p>
-          <span class="shop-coins">10金=1抽 | 100金=10连</span>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button class="shop-btn small" onclick="app.doSinglePull()">单抽</button>
-          <button class="shop-btn small" onclick="app.doTenPull()">十连</button>
-        </div>
-      </div>
-    `;
+    packs.forEach(p => {
+      const item = $el('div', { cls: 'shop-item' });
+      item.appendChild($el('div', { cls: 'shop-pack-icon', text: p.icon }));
+
+      const info = $el('div', { cls: 'shop-info' });
+      info.appendChild($el('div', { cls: 'shop-name', text: p.name }));
+      info.appendChild($el('div', { cls: 'shop-desc', text: p.desc }));
+      info.appendChild($el('span', { cls: 'shop-reward', text: `+${p.coins} 金币` }));
+      item.appendChild(info);
+
+      const btn = $el('button', { cls: 'shop-btn', text: p.price });
+      btn.addEventListener('click', () => UI.buyPack(p.id, p.coins));
+      item.appendChild(btn);
+
+      list.appendChild(item);
+    });
+
+    // 金币抽卡
+    const coinPullItem = $el('div', { cls: 'shop-item' });
+    coinPullItem.appendChild($el('div', { cls: 'shop-pack-icon', text: '📷' }));
+    const cpInfo = $el('div', { cls: 'shop-info' });
+    cpInfo.appendChild($el('div', { cls: 'shop-name', text: '金币抽卡' }));
+    cpInfo.appendChild($el('div', { cls: 'shop-desc', text: '使用金币抽卡' }));
+    cpInfo.appendChild($el('span', { cls: 'shop-reward', text: '10金=1抽 · 100金=10连' }));
+    coinPullItem.appendChild(cpInfo);
+    const cpBtns = $el('div', { cls: 'shop-mini-btns' });
+    const cpSingle = $el('button', { cls: 'shop-btn shop-btn-mini', text: '单抽' });
+    cpSingle.addEventListener('click', () => app.doSinglePull());
+    const cpTen = $el('button', { cls: 'shop-btn shop-btn-mini', text: '十连' });
+    cpTen.addEventListener('click', () => app.doTenPull());
+    cpBtns.appendChild(cpSingle);
+    cpBtns.appendChild(cpTen);
+    coinPullItem.appendChild(cpBtns);
+
+    list.appendChild(coinPullItem);
   },
 
   buyPack(id, coins) {
@@ -674,12 +718,15 @@ const UI = {
     }
   },
 
-  // ===== Tab切换 =====
+  // ===== Tab 切换 =====
   switchTab(tab) {
-    document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(`page-${tab}`).classList.add('active');
-    document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+    document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('is-active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('is-active'));
+    const target = document.getElementById(`page-${tab}`);
+    const navBtn = document.querySelector(`.nav-btn[data-tab="${tab}"]`);
+    if (target) target.classList.add('is-active');
+    if (navBtn) navBtn.classList.add('is-active');
+
     if (tab === 'collection') this.renderCollection();
     if (tab === 'tasks') this.renderTasks();
     if (tab === 'shop') this.renderShop();
