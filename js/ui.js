@@ -54,7 +54,7 @@ const UI = {
     if (cpFill) cpFill.style.width = `${Math.min(100, totalCards > 0 ? (state.collection.length / totalCards) * 100 : 0)}%`;
   },
 
-  // ===== 卡牌详情 =====
+  // ===== 卡牌详情 (Blue Archive 风格) =====
   showCardDetail(card) {
     const overlay = document.getElementById('detail-overlay');
     const content = document.getElementById('detail-content');
@@ -62,38 +62,82 @@ const UI = {
 
     while (content.firstChild) content.removeChild(content.firstChild);
 
+    const rarLower = String(card.rarity).toLowerCase();
+    const starCount = card.rarity === 'SSR' ? 3 : (card.rarity === 'SR' ? 2 : 1);
+    const num = String((card.imageIndex || 0) + 1).padStart(3, '0');
+
     // 返回按钮
     const back = $el('button', { cls: 'back-btn', attr: { 'aria-label': '返回' } });
     back.appendChild(makeSvg(SVG_BACK));
     back.addEventListener('click', () => overlay.classList.remove('is-active'));
     content.appendChild(back);
 
-    const detailCard = $el('div', { cls: 'detail-card' });
-    detailCard.classList.add(`detail-card-${String(card.rarity).toLowerCase()}`);
+    const detailCard = $el('div', { cls: `detail-card detail-card-${rarLower}` });
 
-    // 大图
+    // 大图区
     const imgWrap = $el('div', { cls: 'detail-img-wrap' });
     imgWrap.appendChild($el('img', {
       attr: { src: card.image, alt: card.characterName || '' }
     }));
+    // 稀有度大字 (右上)
     imgWrap.appendChild($el('span', {
-      cls: `detail-rarity-badge detail-rarity-${String(card.rarity).toLowerCase()}`,
+      cls: `detail-rarity-tag detail-rarity-tag-${rarLower}`,
       text: card.rarity
     }));
     if (card.rarity === 'SSR') {
       imgWrap.appendChild($el('span', { cls: 'detail-foil' }));
     }
+    // 名牌 overlay (左下)
+    const nameCard = $el('div', { cls: `detail-namecard detail-namecard-${rarLower}` });
+    nameCard.appendChild($el('span', {
+      cls: 'detail-namecard-tag',
+      text: card.rarity === 'SSR' ? '写真俱乐部 · 限定' : '写真俱乐部'
+    }));
+    nameCard.appendChild($el('span', {
+      cls: 'detail-namecard-stars',
+      text: '★ '.repeat(starCount).trim()
+    }));
+    nameCard.appendChild($el('span', {
+      cls: 'detail-namecard-name',
+      text: card.characterName || ''
+    }));
+    imgWrap.appendChild(nameCard);
     detailCard.appendChild(imgWrap);
 
-    // 信息
-    const info = $el('div', { cls: 'detail-info' });
-    info.appendChild($el('span', {
-      cls: 'detail-num',
-      text: `No.${String((card.imageIndex || 0) + 1).padStart(3, '0')}  ·  YANZI STUDIO`
+    // Paper info card (SCHALE 风格)
+    const paper = $el('div', { cls: 'detail-paper' });
+    paper.appendChild($el('span', { cls: 'detail-paper-clip' }));
+    paper.appendChild($el('span', {
+      cls: 'detail-paper-tag',
+      text: 'PROFILE'
     }));
-    info.appendChild($el('h2', { cls: 'detail-name', text: card.characterName || '' }));
-    info.appendChild($el('p', { cls: 'detail-desc', text: card.description || '' }));
+    const paperBody = $el('div', { cls: 'detail-paper-body' });
+    paperBody.appendChild($el('div', {
+      cls: 'detail-paper-num',
+      text: `No.${num}  ·  YANZI STUDIO`
+    }));
+    paperBody.appendChild($el('div', {
+      cls: 'detail-paper-desc',
+      text: card.description || ''
+    }));
 
+    // 角色收集进度 (如果能查到)
+    if (card.characterId && typeof GachaEngine !== 'undefined') {
+      try {
+        const progress = GachaEngine.getCharacterProgress(card.characterId);
+        const row = $el('div', { cls: 'detail-paper-row' });
+        row.appendChild($el('span', { cls: 'detail-paper-row-label', text: '本角色收集' }));
+        row.appendChild($el('span', {
+          cls: 'detail-paper-row-value',
+          text: `${progress.collected} / ${progress.total}`
+        }));
+        paperBody.appendChild(row);
+      } catch (_) {}
+    }
+    paper.appendChild(paperBody);
+    detailCard.appendChild(paper);
+
+    // 操作按钮
     const actions = $el('div', { cls: 'detail-actions' });
 
     const saveBtn = $el('button', { cls: 'detail-btn' });
@@ -110,8 +154,7 @@ const UI = {
       UI.generatePoster(card.image, card.characterName, card.rarity, card.description || ''));
     actions.appendChild(posterBtn);
 
-    info.appendChild(actions);
-    detailCard.appendChild(info);
+    detailCard.appendChild(actions);
     content.appendChild(detailCard);
 
     overlay.classList.add('is-active');
@@ -216,13 +259,13 @@ const UI = {
     }
   },
 
-  // ===== 海报生成 =====
+  // ===== 海报生成 (Blue Archive 学院风) =====
   generatePoster(imgSrc, name, rarity, description) {
     const canvas = document.getElementById('poster-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const rarityColors = { SSR: '#FFC940', SR: '#B7A2FF', R: '#7DB7FF' };
-    const color = rarityColors[rarity] || '#FFC940';
+    const rarityColors = { SSR: '#F8C247', SR: '#B795F0', R: '#6FB1E8' };
+    const color = rarityColors[rarity] || '#F8C247';
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -231,31 +274,52 @@ const UI = {
       canvas.width = W;
       canvas.height = H;
 
-      // 背景渐变
+      // BA 学院风浅蓝渐变背景
       const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-      bgGrad.addColorStop(0, '#FFE8F1');
-      bgGrad.addColorStop(0.5, '#FFF8F0');
-      bgGrad.addColorStop(1, '#F5E8FF');
+      bgGrad.addColorStop(0, '#E8F4FF');
+      bgGrad.addColorStop(0.5, '#F0F8FF');
+      bgGrad.addColorStop(1, '#D8E8F5');
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, W, H);
 
-      ctx.fillStyle = 'rgba(255,182,200,0.18)';
-      for (let i = 0; i < 16; i++) {
+      // 斜线纹理装饰 (右上)
+      ctx.save();
+      ctx.globalAlpha = 0.08;
+      ctx.strokeStyle = '#5B9BD5';
+      ctx.lineWidth = 2;
+      for (let i = -200; i < 200; i += 24) {
         ctx.beginPath();
-        ctx.arc(Math.random() * W, Math.random() * H, 3 + Math.random() * 10, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.moveTo(W - 280 + i, 0);
+        ctx.lineTo(W + i - 50, 240);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // 钻石装饰小点
+      ctx.fillStyle = 'rgba(91,155,213,0.15)';
+      for (let i = 0; i < 12; i++) {
+        const dx = Math.random() * W, dy = Math.random() * H, ds = 3 + Math.random() * 6;
+        ctx.save();
+        ctx.translate(dx, dy);
+        ctx.rotate(Math.PI / 4);
+        ctx.fillRect(-ds/2, -ds/2, ds, ds);
+        ctx.restore();
       }
 
-      // 拍立得卡
+      // 主卡 - 白色 SCHALE 纸张风
       const cardX = 45, cardY = 60, cardW = W - 90, cardH = 880;
       ctx.fillStyle = '#FFFFFF';
-      ctx.shadowColor = 'rgba(50,30,60,0.18)';
-      ctx.shadowBlur = 35;
+      ctx.shadowColor = 'rgba(40,70,120,0.18)';
+      ctx.shadowBlur = 32;
       ctx.shadowOffsetY = 10;
       this.roundRect(ctx, cardX, cardY, cardW, cardH, 12);
       ctx.fill();
       ctx.shadowBlur = 0;
       ctx.shadowOffsetY = 0;
+
+      // 卡左侧蓝色 4px 装饰条 (BA 名牌风)
+      ctx.fillStyle = color;
+      ctx.fillRect(cardX, cardY + 16, 6, cardH - 32);
 
       const padX = 36, padTop = 36, padBottom = 200;
       const imgAreaW = cardW - padX * 2;
@@ -282,60 +346,80 @@ const UI = {
       ctx.drawImage(img, drawX, drawY, drawW, drawH);
       ctx.restore();
 
-      // 稀有度标签
-      const tagW = 70, tagH = 32;
-      const tagX = cardX + cardW - tagW - 30;
-      const tagY = cardY + 30;
+      // 稀有度大字 tag (右上, 倾斜 BA 风)
+      const tagW = 88, tagH = 38;
+      const tagX = cardX + cardW - tagW - 26;
+      const tagY = cardY + 24;
+      ctx.save();
+      ctx.translate(tagX + tagW / 2, tagY + tagH / 2);
+      ctx.rotate(-0.07);
       ctx.fillStyle = color;
-      this.roundRect(ctx, tagX, tagY, tagW, tagH, 6);
+      ctx.shadowColor = 'rgba(40,70,120,0.30)';
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetY = 4;
+      this.roundRect(ctx, -tagW/2, -tagH/2, tagW, tagH, 6);
       ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
       ctx.fillStyle = rarity === 'SSR' ? '#3D2A0A' : '#FFFFFF';
-      ctx.font = '700 16px "Bebas Neue", sans-serif';
+      ctx.font = '900 20px "Big Shoulders Display", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(rarity, tagX + tagW / 2, tagY + tagH / 2 + 1);
+      ctx.fillText(rarity, 0, 1);
+      ctx.restore();
+
+      // SCHALE 角标 (左上)
+      ctx.fillStyle = '#3D7AC0';
+      const stagX = cardX + 26, stagY = cardY + 24;
+      const stagW = 78, stagH = 26;
+      this.roundRect(ctx, stagX, stagY, stagW, stagH, 13);
+      ctx.fill();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '700 12px "Bebas Neue", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.letterSpacing = '0.2em';
+      ctx.fillText('SCHALE', stagX + stagW / 2, stagY + stagH / 2 + 1);
 
       // 编号
       const captionY = cardY + cardH - padBottom + 28;
-      ctx.fillStyle = '#9B8EA8';
+      ctx.fillStyle = '#5C7AA0';
       ctx.font = '600 13px "Bebas Neue", sans-serif';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
-      ctx.fillText('No.001  ·  YANZI STUDIO', cardX + padX, captionY);
+      ctx.fillText('NO.001  ·  YANZI STUDIO', cardX + padX, captionY);
 
-      ctx.fillStyle = '#2D2240';
-      ctx.font = '700 38px "Caveat", "M PLUS Rounded 1c", sans-serif';
-      ctx.fillText(name, cardX + padX, captionY + 24);
+      // 名字 BA 学院风 - 圆润 + 深蓝
+      ctx.fillStyle = '#1B2840';
+      ctx.font = '800 38px "M PLUS Rounded 1c", sans-serif';
+      ctx.fillText(name, cardX + padX, captionY + 22);
 
-      ctx.fillStyle = '#7B6E8C';
-      ctx.font = '400 16px "Outfit", sans-serif';
+      // 描述
+      ctx.fillStyle = '#506280';
+      ctx.font = '400 16px "Outfit", "M PLUS Rounded 1c", sans-serif';
       const descLines = this.wrapText(ctx, description, cardW - padX * 2);
       descLines.forEach((line, i) => {
-        ctx.fillText(line, cardX + padX, captionY + 78 + i * 24);
+        ctx.fillText(line, cardX + padX, captionY + 76 + i * 24);
       });
 
-      // 胶带
-      ctx.save();
-      ctx.translate(W / 2, cardY - 10);
-      ctx.rotate(-0.04);
-      ctx.fillStyle = 'rgba(247,217,164,0.75)';
-      ctx.fillRect(-90, 0, 180, 28);
-      ctx.restore();
-
-      // 底部
-      ctx.fillStyle = '#1A0F2A';
+      // 底部 navy block (BA 风)
+      ctx.fillStyle = '#1B2840';
       ctx.fillRect(0, H - 200, W, 200);
+
+      // 顶部黄色装饰条
+      ctx.fillStyle = '#F8C247';
+      ctx.fillRect(0, H - 200, W, 4);
 
       ctx.fillStyle = '#FFFFFF';
       ctx.font = '900 32px "M PLUS Rounded 1c", sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText('妍子写真俱乐部', 50, H - 160);
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      ctx.font = '500 14px "Bebas Neue", sans-serif';
-      ctx.fillText('YANZI · PHOTO CLUB', 50, H - 122);
+      ctx.fillText('妍子写真俱乐部', 50, H - 156);
+      ctx.fillStyle = '#F8C247';
+      ctx.font = '500 13px "Bebas Neue", sans-serif';
+      ctx.fillText('YANZI  ·  PHOTO CLUB', 50, H - 120);
       ctx.fillStyle = 'rgba(255,255,255,0.65)';
       ctx.font = '400 12px "Outfit", sans-serif';
-      ctx.fillText('扫码加入俱乐部 · 收集你的本命角色', 50, H - 90);
+      ctx.fillText('扫码加入俱乐部 · 收集你的本命角色', 50, H - 92);
 
       try {
         const qr = qrcode(0, 'M');
@@ -349,7 +433,7 @@ const UI = {
         ctx.fillStyle = '#FFFFFF';
         this.roundRect(ctx, qrX - 8, qrY - 8, qrSize + 16, qrSize + 16, 10);
         ctx.fill();
-        ctx.fillStyle = '#1A0F2A';
+        ctx.fillStyle = '#1B2840';
         for (let row = 0; row < qrModuleCount; row++) {
           for (let col = 0; col < qrModuleCount; col++) {
             if (qr.isDark(row, col)) {
