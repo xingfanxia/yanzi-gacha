@@ -206,29 +206,9 @@ html, body {
   pointer-events: none;
 }
 
-/* ============ HALO (Blue Archive 签名元素) ============ */
+/* ============ HALO 移除 (用户反馈不需要) ============ */
 
-.character-halo {
-  position: absolute;
-  top: 8%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 110px;
-  height: 110px;
-  z-index: 3;
-  pointer-events: none;
-  animation: halo-glow 3.5s ease-in-out infinite alternate, halo-spin 30s linear infinite;
-}
-
-@keyframes halo-glow {
-  0% { filter: drop-shadow(0 0 12px oklch(0.78 0.13 200 / 0.7)) brightness(1); }
-  100% { filter: drop-shadow(0 0 24px oklch(0.78 0.13 200 / 0.95)) brightness(1.15); }
-}
-
-@keyframes halo-spin {
-  0% { transform: translateX(-50%) rotateX(70deg) rotateZ(0deg); }
-  100% { transform: translateX(-50%) rotateX(70deg) rotateZ(360deg); }
-}
+.character-halo { display: none; }
 
 /* Banner 内容 - 角色名+meta 在立绘下方 */
 .banner-content {
