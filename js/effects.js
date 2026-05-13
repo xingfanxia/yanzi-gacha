@@ -315,38 +315,26 @@ const Ceremony = {
 
     const tier = this.detectTier(cards);
     this._lastTier = tier;
-    const headliner = this._pickHeadliner(cards);
 
     this._resetStage();
     this._show(this.els.ceremonyStage);
 
-    // Phase 1: 信封 (0 - 0.7s)
+    // Phase 1: 信封登场
     await this.phaseEnvelope(cards.length);
     if (this.skipRequested) return this.skipTo(cards);
 
-    // Phase 2-3: 展开 + 签字批准 (0.7 - 2.1s)
+    // Phase 2-3: halo 卡 + 用户签字
     await this.phaseHaloCardAndSign();
     if (this.skipRequested) return this.skipTo(cards);
 
-    // Phase 4: 飞散到 5×2 网格 (2.1 - 3.3s)
+    // Phase 4: 卡片飞散到 5×2 网格
     await this.phaseSpread(cards);
     if (this.skipRequested) return this.skipTo(cards);
 
-    // Phase 5: Shockwave (SR+) (3.3 - 4.3s)
-    if (tier !== 'R') {
-      await this.phaseShockwave(tier);
-      if (this.skipRequested) return this.skipTo(cards);
-    }
-
-    // Phase 6: 白闪 (~0.4s)
-    await this.phaseFlash();
-    if (this.skipRequested) return this.skipTo(cards);
-
-    // Phase 7: 角色立绘 (~1.6s)
-    await this.phaseCharacterReveal(headliner, tier);
-    if (this.skipRequested) return this.skipTo(cards);
-
-    // Phase 8: 结果网格
+    // 直接到结果网格 — Shockwave/白闪/立绘 cutscene 只在用户点击 SR/SSR 翻牌时触发
+    this._hide(this.els.cardsSpread);
+    this._clearChildren(this.els.cardsSpread);
+    if (this.els.ceremonySparkles) this.els.ceremonySparkles.classList.remove('is-active');
     this.phaseResultGrid(cards);
   },
 
