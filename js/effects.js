@@ -412,49 +412,43 @@ const Ceremony = {
       let done = false;
       let pathStr = '';
 
-      const SIGN_THRESHOLD = 80; // 累计长度 (viewBox 单位) 达到才算签好
+      const SIGN_THRESHOLD = 40; // 累计长度 (viewBox 单位) 达到才算签好
 
-      const getXY = (e) => {
+      const getXY = (cx, cy) => {
         const rect = doodle.getBoundingClientRect();
-        const cx = e.clientX ?? (e.touches && e.touches[0]?.clientX);
-        const cy = e.clientY ?? (e.touches && e.touches[0]?.clientY);
         const x = ((cx - rect.left) / rect.width) * 260;
         const y = ((cy - rect.top) / rect.height) * 50;
         return { x, y };
       };
 
-      const start = (e) => {
+      const onStart = (cx, cy) => {
         if (done) return;
-        e.preventDefault();
         drawing = true;
-        const { x, y } = getXY(e);
+        const { x, y } = getXY(cx, cy);
         points = [{ x, y }];
         pathStr = `M ${x.toFixed(1)} ${y.toFixed(1)}`;
         path.setAttribute('d', pathStr);
         stripe.classList.remove('is-waiting');
         stripe.classList.add('is-signing');
-        try { stripe.setPointerCapture(e.pointerId); } catch (_) {}
       };
 
-      const move = (e) => {
+      const onMove = (cx, cy) => {
         if (!drawing || done) return;
-        e.preventDefault();
-        const { x, y } = getXY(e);
+        const { x, y } = getXY(cx, cy);
         const prev = points[points.length - 1];
         const dx = x - prev.x;
         const dy = y - prev.y;
         const dist = Math.hypot(dx, dy);
-        if (dist < 1.5) return;
+        if (dist < 1) return;
         points.push({ x, y });
         totalLen += dist;
         pathStr += ` L ${x.toFixed(1)} ${y.toFixed(1)}`;
         path.setAttribute('d', pathStr);
       };
 
-      const end = (e) => {
+      const onEnd = () => {
         if (!drawing || done) return;
         drawing = false;
-        try { if (e.pointerId != null) stripe.releasePointerCapture(e.pointerId); } catch (_) {}
         if (totalLen >= SIGN_THRESHOLD) {
           // 签字成功
           stripe.classList.remove('is-signing');
@@ -471,13 +465,54 @@ const Ceremony = {
         }
       };
 
+      // 触摸事件 (移动端主路径)
+      const tStart = (e) => {
+        if (done || !e.touches || e.touches.length === 0) return;
+        e.preventDefault();
+        const t = e.touches[0];
+        onStart(t.clientX, t.clientY);
+      };
+      const tMove = (e) => {
+        if (done || !e.touches || e.touches.length === 0) return;
+        e.preventDefault();
+        const t = e.touches[0];
+        onMove(t.clientX, t.clientY);
+      };
+      const tEnd = (e) => {
+        if (done) return;
+        e.preventDefault();
+        onEnd();
+      };
+
+      // Mouse 事件 (桌面备用, 移动端浏览器有的也只发 mouse)
+      const mStart = (e) => {
+        if (done) return;
+        // 如果是 touchscreen 的合成 mouse, 跳过 (touch 已处理)
+        if (drawing) return;
+        e.preventDefault();
+        onStart(e.clientX, e.clientY);
+      };
+      const mMove = (e) => {
+        if (done || !drawing) return;
+        e.preventDefault();
+        onMove(e.clientX, e.clientY);
+      };
+      const mEnd = (e) => {
+        if (done || !drawing) return;
+        e.preventDefault();
+        onEnd();
+      };
+
       const finish = () => {
         if (done) return;
         done = true;
-        stripe.removeEventListener('pointerdown', start);
-        stripe.removeEventListener('pointermove', move);
-        stripe.removeEventListener('pointerup', end);
-        stripe.removeEventListener('pointercancel', end);
+        stripe.removeEventListener('touchstart', tStart);
+        stripe.removeEventListener('touchmove', tMove);
+        stripe.removeEventListener('touchend', tEnd);
+        stripe.removeEventListener('touchcancel', tEnd);
+        stripe.removeEventListener('mousedown', mStart);
+        window.removeEventListener('mousemove', mMove);
+        window.removeEventListener('mouseup', mEnd);
         stripe.classList.remove('is-waiting', 'is-signing');
         this._signResolve = null;
         resolve();
@@ -491,10 +526,14 @@ const Ceremony = {
         finish();
       };
 
-      stripe.addEventListener('pointerdown', start);
-      stripe.addEventListener('pointermove', move);
-      stripe.addEventListener('pointerup', end);
-      stripe.addEventListener('pointercancel', end);
+      // 注册事件 - touch 先, mouse 兜底
+      stripe.addEventListener('touchstart', tStart, { passive: false });
+      stripe.addEventListener('touchmove', tMove, { passive: false });
+      stripe.addEventListener('touchend', tEnd, { passive: false });
+      stripe.addEventListener('touchcancel', tEnd, { passive: false });
+      stripe.addEventListener('mousedown', mStart);
+      window.addEventListener('mousemove', mMove);
+      window.addEventListener('mouseup', mEnd);
 
       // 12 秒兜底
       setTimeout(() => {
