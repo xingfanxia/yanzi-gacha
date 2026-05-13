@@ -137,12 +137,12 @@ html, body {
   height: 16px !important;
 }
 
-.hud-pity .hud-icon { color: oklch(0.55 0.22 290) !important; }
+.hud-album .hud-icon { color: oklch(0.55 0.22 290) !important; }
 .hud-ticket .hud-icon { color: oklch(0.72 0.18 90) !important; }
 .hud-coin .hud-icon { color: oklch(0.65 0.18 245) !important; }
 
-.hud-pity .hud-slash,
-.hud-pity .hud-max { color: var(--ba-text-3) !important; opacity: 1 !important; }
+.hud-album .hud-slash,
+.hud-album .hud-max { color: var(--ba-text-3) !important; opacity: 1 !important; }
 
 /* ============ 主页 (抽卡 banner) - Blue Archive 布局 ============ */
 

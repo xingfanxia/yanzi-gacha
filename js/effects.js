@@ -146,51 +146,36 @@ const Effects = {
       slot.appendChild(avatar);
       slot.classList.add('is-flipped');
     } else {
-      // SR / SSR: halo 背面卡，点击翻面
+      // SR / SSR: halo 背面卡，点击触发 fullscreen cutscene 演出 + 翻面
       const back = $el('div', { cls: `halo-back-card halo-back-${rarLower}` });
       back.appendChild(ceremonyMakeSvg(SVG_HALO_MINI));
       back.appendChild($el('span', { cls: 'halo-back-tap', text: '点击翻面' }));
       slot.appendChild(back);
 
-      const flipSlot = () => {
-        if (slot.classList.contains('is-flipped') || slot.classList.contains('is-zooming')) {
-          if (slot.classList.contains('is-flipped') && onDetail) onDetail();
+      const flipSlot = async () => {
+        if (slot.classList.contains('is-flipped')) {
+          if (onDetail) onDetail();
           return;
         }
-        // 特写演出: zoom 放大 + halo burst + 翻面
-        slot.classList.add('is-zooming');
-        // 全屏 dim 蒙层（让特写更突出）
-        const stage = document.getElementById('result-stage');
-        if (stage) stage.classList.add('has-zoom');
-        // 翻面 shockwave 环（仅 SR/SSR）
-        const burst = $el('span', { cls: `slot-burst slot-burst-${rarLower}` });
-        slot.appendChild(burst);
-        // 在 320ms 时换内容
-        setTimeout(() => {
-          // 删除 back 但保留 burst
-          const oldBack = slot.querySelector('.halo-back-card');
-          if (oldBack) oldBack.remove();
-          const avatar = this.createResultAvatarCard(card, { animateIn: false });
-          avatar.classList.add('is-flipped');
-          slot.appendChild(avatar);
-          slot.classList.add('is-flipped');
+        if (slot.dataset.flipping === '1') return;
+        slot.dataset.flipping = '1';
+
+        // 全屏 cutscene: shockwave + 白闪 + 立绘登场 + 稀有度大字横幅
+        await Ceremony.flipSlotCutscene(slot, card);
+
+        // cutscene 后绑定头像 click → detail
+        const avatar = slot.querySelector('.avatar-card');
+        if (avatar) {
           avatar.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (slot.classList.contains('is-zooming')) return;
             if (onDetail) onDetail();
           });
-        }, 320);
-        // 在 1200ms 缩回 (~特写持续 ~900ms)
-        setTimeout(() => {
-          slot.classList.remove('is-zooming');
-          const b = slot.querySelector('.slot-burst');
-          if (b) b.remove();
-          if (stage) stage.classList.remove('has-zoom');
-        }, 1300);
+        }
+        slot.dataset.flipping = '0';
       };
       back.addEventListener('click', flipSlot);
       slot.addEventListener('click', (e) => {
-        if (!slot.classList.contains('is-flipped') && !slot.classList.contains('is-zooming') && e.target !== back) flipSlot();
+        if (!slot.classList.contains('is-flipped') && slot.dataset.flipping !== '1' && e.target !== back) flipSlot();
       });
     }
     return slot;
@@ -407,41 +392,119 @@ const Ceremony = {
     }
   },
 
-  // 等待用户点击 sign-stripe (或 skip / 兜底自动签字)
+  // 等待用户手动签字 (drag 画 path) / skip / 兜底自动签字
   _waitForSign() {
     return new Promise((resolve) => {
       const stripe = this.els.signStripe;
+      if (!stripe) { resolve(); return; }
+      const doodle = stripe.querySelector('.sign-doodle');
+      const path = doodle && doodle.querySelector('#sign-doodle-path');
+      if (!doodle || !path) { resolve(); return; }
+
+      // 清空旧 path, 让用户从零画
+      path.setAttribute('d', '');
+      path.style.strokeDasharray = '';
+      path.style.strokeDashoffset = '';
+
+      let drawing = false;
+      let points = [];
+      let totalLen = 0;
       let done = false;
+      let pathStr = '';
+
+      const SIGN_THRESHOLD = 80; // 累计长度 (viewBox 单位) 达到才算签好
+
+      const getXY = (e) => {
+        const rect = doodle.getBoundingClientRect();
+        const cx = e.clientX ?? (e.touches && e.touches[0]?.clientX);
+        const cy = e.clientY ?? (e.touches && e.touches[0]?.clientY);
+        const x = ((cx - rect.left) / rect.width) * 260;
+        const y = ((cy - rect.top) / rect.height) * 50;
+        return { x, y };
+      };
+
+      const start = (e) => {
+        if (done) return;
+        e.preventDefault();
+        drawing = true;
+        const { x, y } = getXY(e);
+        points = [{ x, y }];
+        pathStr = `M ${x.toFixed(1)} ${y.toFixed(1)}`;
+        path.setAttribute('d', pathStr);
+        stripe.classList.remove('is-waiting');
+        stripe.classList.add('is-signing');
+        try { stripe.setPointerCapture(e.pointerId); } catch (_) {}
+      };
+
+      const move = (e) => {
+        if (!drawing || done) return;
+        e.preventDefault();
+        const { x, y } = getXY(e);
+        const prev = points[points.length - 1];
+        const dx = x - prev.x;
+        const dy = y - prev.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 1.5) return;
+        points.push({ x, y });
+        totalLen += dist;
+        pathStr += ` L ${x.toFixed(1)} ${y.toFixed(1)}`;
+        path.setAttribute('d', pathStr);
+      };
+
+      const end = (e) => {
+        if (!drawing || done) return;
+        drawing = false;
+        try { if (e.pointerId != null) stripe.releasePointerCapture(e.pointerId); } catch (_) {}
+        if (totalLen >= SIGN_THRESHOLD) {
+          // 签字成功
+          stripe.classList.remove('is-signing');
+          stripe.classList.add('is-signed');
+          setTimeout(finish, 400);
+        } else {
+          // 太短重置
+          pathStr = '';
+          points = [];
+          totalLen = 0;
+          path.setAttribute('d', '');
+          stripe.classList.remove('is-signing');
+          stripe.classList.add('is-waiting');
+        }
+      };
+
       const finish = () => {
         if (done) return;
         done = true;
-        if (stripe) {
-          stripe.removeEventListener('click', onClick);
-          stripe.classList.remove('is-waiting');
-        }
+        stripe.removeEventListener('pointerdown', start);
+        stripe.removeEventListener('pointermove', move);
+        stripe.removeEventListener('pointerup', end);
+        stripe.removeEventListener('pointercancel', end);
+        stripe.classList.remove('is-waiting', 'is-signing');
         this._signResolve = null;
         resolve();
       };
-      const onClick = () => {
-        if (done) return;
-        // 画 doodle 签字动画
-        const doodle = stripe && stripe.querySelector('.sign-doodle');
-        if (doodle) doodle.classList.add('is-in');
-        stripe.classList.add('is-signed');
-        stripe.removeEventListener('click', onClick);
-        // 等 doodle 画完
-        setTimeout(finish, 750);
-      };
-      // 暴露给 skip handler 提前 resolve
-      this._signResolve = finish;
 
-      if (stripe) {
-        stripe.addEventListener('click', onClick);
-      }
-      // 8 秒兜底自动签
+      // skip 时强制画一个 doodle 然后跳过
+      this._signResolve = () => {
+        if (done) return;
+        path.setAttribute('d', 'M 10 35 Q 30 8 55 28 T 100 16 Q 130 8 155 32 Q 180 6 215 25 T 250 22');
+        stripe.classList.add('is-signed');
+        finish();
+      };
+
+      stripe.addEventListener('pointerdown', start);
+      stripe.addEventListener('pointermove', move);
+      stripe.addEventListener('pointerup', end);
+      stripe.addEventListener('pointercancel', end);
+
+      // 12 秒兜底
       setTimeout(() => {
-        if (!done && stripe) onClick();
-      }, 8000);
+        if (!done) {
+          path.setAttribute('d', 'M 10 35 Q 30 8 55 28 T 100 16 Q 130 8 155 32 Q 180 6 215 25 T 250 22');
+          stripe.classList.add('is-signed');
+          stripe.classList.remove('is-waiting', 'is-signing');
+          finish();
+        }
+      }, 12000);
     });
   },
 
@@ -478,6 +541,40 @@ const Ceremony = {
     this._show(this.els.shockwaveStage);
     if (tier === 'SSR') this.els.shockwaveStage.classList.add('is-ssr');
     await Effects.sleep(900);
+  },
+
+  // ============ Phase 8 个卡翻面 fullscreen cutscene ============
+  async flipSlotCutscene(slot, card) {
+    const tier = card.rarity;
+    // 暂时隐藏 result-stage (cutscene 期间不可见)
+    this._hide(this.els.resultStage);
+    // 切到 magic 背景 + 星屑
+    this._setBgPhase('magic');
+    if (this.els.ceremonySparkles) {
+      Effects.startCeremonySparkles(this.els.ceremonySparkles, 32);
+      this.els.ceremonySparkles.classList.add('is-active');
+    }
+
+    // (1) Shockwave (SR=青色 / SSR=金色)
+    await this.phaseShockwave(tier);
+
+    // (2) 白闪
+    await this.phaseFlash();
+
+    // (3) 角色立绘登场 + 稀有度大字横幅
+    await this.phaseCharacterReveal(card, tier);
+
+    // (4) 翻面: 替换 slot 内容为头像卡
+    while (slot.firstChild) slot.removeChild(slot.firstChild);
+    const avatar = Effects.createResultAvatarCard(card, { animateIn: false });
+    slot.appendChild(avatar);
+    slot.classList.add('is-flipped');
+
+    // (5) 隐藏立绘 stage + 星屑, 回到 result 背景
+    this._hide(this.els.characterRevealStage);
+    if (this.els.ceremonySparkles) this.els.ceremonySparkles.classList.remove('is-active');
+    this._setBgPhase('result');
+    this._show(this.els.resultStage);
   },
 
   async phaseFlash() {
@@ -561,12 +658,18 @@ const Ceremony = {
       const slot = Effects.createResultSlot(c, i, () => {
         if (typeof UI !== 'undefined') UI.showCardDetail(c);
       });
-      // 暴露 flip() 给 reveal-all
+      // 暴露 instant-flip 给 reveal-all (跳过 cutscene, 直接翻)
       if (c.rarity !== 'R') {
-        slot._flipNow = () => {
+        slot._flipInstant = () => {
           if (slot.classList.contains('is-flipped')) return;
-          const back = slot.querySelector('.halo-back-card');
-          if (back) back.click();
+          while (slot.firstChild) slot.removeChild(slot.firstChild);
+          const avatar = Effects.createResultAvatarCard(c, { animateIn: true });
+          slot.appendChild(avatar);
+          slot.classList.add('is-flipped');
+          avatar.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (typeof UI !== 'undefined') UI.showCardDetail(c);
+          });
         };
       }
       slots.push(slot);
@@ -574,7 +677,7 @@ const Ceremony = {
     });
 
     // "全部翻开" 按钮 - 只在有未翻 SR/SSR 时显示
-    const hasHidden = slots.some(s => s._flipNow);
+    const hasHidden = slots.some(s => s._flipInstant);
     this._setupRevealAllBtn(hasHidden, slots);
 
     // 招募点数 = 卡片数量
@@ -602,7 +705,7 @@ const Ceremony = {
       btn.style.display = '';
       btn.onclick = () => {
         slots.forEach((s, i) => {
-          if (s._flipNow) setTimeout(() => s._flipNow(), i * 90);
+          if (s._flipInstant) setTimeout(() => s._flipInstant(), i * 90);
         });
         btn.style.display = 'none';
       };

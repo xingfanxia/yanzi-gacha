@@ -157,10 +157,10 @@ img {
   flex-shrink: 0;
 }
 
-.hud-pity { color: var(--accent-3); }
-.hud-pity .hud-icon { color: var(--accent-3); }
-.hud-pity .hud-slash,
-.hud-pity .hud-max { font-size: 11px; opacity: 0.6; }
+.hud-album { color: var(--accent-3); }
+.hud-album .hud-icon { color: var(--accent-3); }
+.hud-album .hud-slash,
+.hud-album .hud-max { font-size: 11px; opacity: 0.6; }
 
 .hud-ticket { color: var(--accent-1-deep); }
 .hud-ticket .hud-icon { color: var(--accent-1); }

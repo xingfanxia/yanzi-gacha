@@ -39,12 +39,14 @@ const UI = {
     };
     set('ticket-count', state.tickets);
     set('coin-count', state.coins);
-    set('pity-count', state.pityCount);
-    set('pity-count-2', `${state.pityCount}/90`);
+    set('info-pity', state.pityCount);          // 主页 info-paper 里的保底数
+    set('pity-count-2', `${state.pityCount}/90`); // 抽卡页 rate-card 保底数
 
     const totalCards = (typeof getAllCards === 'function') ? getAllCards().length : 150;
-    set('collection-count', state.collection.length);
+    set('collection-count', state.collection.length);     // 主页 collection-progress
     set('collection-total', totalCards);
+    set('hud-collection-count', state.collection.length); // 顶部 HUD 图鉴 chip
+    set('hud-collection-total', totalCards);
 
     const pityFill = document.getElementById('pity-progress-bar');
     if (pityFill) pityFill.style.width = `${Math.min(100, (state.pityCount / 90) * 100)}%`;
