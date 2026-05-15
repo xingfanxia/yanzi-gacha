@@ -55,6 +55,13 @@ function embedBattleTab(source) {
   const replacement = `        <!-- ========== 24 频率战 · 内嵌实战 ========== -->
         <div class="screen s-battle s-battle-tab" data-id="24">
           <div id="wireframeBattleMount" class="wireframe-battle-mount"></div>
+          <button type="button" class="wireframe-battle-back" data-jump="03" aria-label="返回卡池">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"/>
+              <polyline points="12 19 5 12 12 5"/>
+            </svg>
+            <span>卡池</span>
+          </button>
         </div>
 
       </div>`;
@@ -100,6 +107,36 @@ const wireframeCss = `${rootedAssets(between(wireframeHtml, "<style>", "</style>
   inset: 0;
   overflow: hidden;
   z-index: 1;
+}
+.s-battle-tab .wireframe-battle-back {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px 0 10px;
+  border: 1px solid rgba(123, 201, 255, 0.32);
+  border-radius: 999px;
+  background: rgba(8, 12, 28, 0.72);
+  color: rgba(232, 234, 246, 0.9);
+  font-family: "Cormorant Garamond", serif;
+  font-size: 13px;
+  letter-spacing: 0.8px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28), 0 0 16px rgba(123, 201, 255, 0.08);
+  cursor: pointer;
+}
+.s-battle-tab .wireframe-battle-back:hover {
+  border-color: var(--aurora-cyan);
+  color: var(--aurora-cyan);
+}
+.s-battle-tab .wireframe-battle-back svg {
+  width: 14px;
+  height: 14px;
 }
 `;
 const wireframeBody = embedBattleTab(rootedAssets(

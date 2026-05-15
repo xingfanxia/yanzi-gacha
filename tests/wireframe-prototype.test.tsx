@@ -89,6 +89,9 @@ describe("WireframePrototype", () => {
     expect(container.querySelector("[data-real-link]")).not.toBeInTheDocument();
     expect(screen.getByText("选 一 位 出 战")).toBeInTheDocument();
     expect(container.querySelector(".battle-root.embedded")).toBeInTheDocument();
-    expect(screen.queryByTitle("返回卡池")).not.toBeInTheDocument();
+    expect(container.querySelector("#back-to-home-link")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "返回卡池" }));
+    expect(activeScreenId(container)).toBe("03");
   });
 });

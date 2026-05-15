@@ -1,8 +1,9 @@
 from pathlib import Path
+import os
 import re
 from playwright.sync_api import expect, sync_playwright
 
-BASE_URL = "http://127.0.0.1:3210"
+BASE_URL = os.environ.get("BASE_URL", "http://127.0.0.1:3210").rstrip("/")
 OUT_DIR = Path("/tmp/yanzi-gacha-next-verify")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -30,8 +31,13 @@ with sync_playwright() as p:
     expect(wire.get_by_text("选 一 位 出 战")).to_be_visible()
     expect(wire.locator(".battle-root.embedded")).to_have_count(1)
     expect(wire.get_by_title("返回卡池")).to_have_count(0)
+    expect(wire.get_by_role("button", name="返回卡池")).to_be_visible()
     wire.screenshot(path=str(OUT_DIR / "wireframe-battle-tab-desktop.png"), full_page=False)
     print(f"wireframe_battle_tab active=24 screenshot={OUT_DIR / 'wireframe-battle-tab-desktop.png'}")
+    wire.get_by_role("button", name="返回卡池").click()
+    expect(wire.locator('.screen.active[data-id="03"]')).to_have_count(1)
+    wire.locator("#screenSelect").select_option("24")
+    expect(wire.locator('.screen.active[data-id="24"]')).to_have_count(1)
 
     wire_mobile = browser.new_page(
         viewport={"width": 430, "height": 932},
@@ -43,6 +49,10 @@ with sync_playwright() as p:
     wire_mobile.locator("#screenSelect").select_option("24")
     expect(wire_mobile.get_by_text("选 一 位 出 战")).to_be_visible()
     expect(wire_mobile.locator(".battle-root.embedded")).to_have_count(1)
+    expect(wire_mobile.get_by_role("button", name="返回卡池")).to_be_visible()
+    wire_mobile.get_by_role("button", name="返回卡池").click()
+    expect(wire_mobile.locator('.screen.active[data-id="03"]')).to_have_count(1)
+    wire_mobile.locator("#screenSelect").select_option("24")
     wire_mobile.screenshot(path=str(OUT_DIR / "wireframe-mobile.png"), full_page=False)
     print(f"wireframe_mobile battle_tab_visible=1 screenshot={OUT_DIR / 'wireframe-mobile.png'}")
 
