@@ -1,8 +1,6 @@
 "use client";
 
-import { memo, useEffect, useLayoutEffect, useState } from "react";
-import { createPortal } from "react-dom";
-import { BattleExperience } from "@/features/battle/BattleExperience";
+import { memo, useEffect } from "react";
 import { initWireframePrototype } from "./wireframeInteractions";
 import { WIREFRAME_MARKUP } from "./wireframeMarkup";
 
@@ -13,21 +11,9 @@ const WireframeMarkupHost = memo(function WireframeMarkupHost() {
 });
 
 export function WireframePrototype() {
-  const [battleMount, setBattleMount] = useState<HTMLElement | null>(null);
-
-  useLayoutEffect(() => {
-    setBattleMount(document.getElementById("wireframeBattleMount"));
+  useEffect(() => {
+    return initWireframePrototype();
   }, []);
 
-  useEffect(() => {
-    if (!battleMount) return undefined;
-    return initWireframePrototype();
-  }, [battleMount]);
-
-  return (
-    <>
-      <WireframeMarkupHost />
-      {battleMount ? createPortal(<BattleExperience embedded />, battleMount) : null}
-    </>
-  );
+  return <WireframeMarkupHost />;
 }

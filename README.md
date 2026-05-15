@@ -4,7 +4,7 @@ Next.js migration of the Memoria wireframe and frequency-battle demo.
 
 ## Routes
 
-- `/spec/wireframe` - migrated `spec/wireframe.html` prototype; screen 24 embeds the battle experience as the frequency tab.
+- `/spec/wireframe` - migrated `spec/wireframe.html` prototype; screen 24 keeps the original frequency-battle entry and opens `/battle`.
 - `/battle` - standalone migrated `battle/index.html` demo for direct battle testing.
 - `/` and `/spec` redirect to `/spec/wireframe`.
 

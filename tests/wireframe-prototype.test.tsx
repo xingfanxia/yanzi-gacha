@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WireframePrototype } from "@/features/wireframe/WireframePrototype";
 
@@ -78,7 +78,8 @@ describe("WireframePrototype", () => {
     expect(container.querySelector("#welcomeModal")).toHaveClass("show");
   });
 
-  it("embeds the battle experience inside the frequency tab", () => {
+  it("keeps the frequency tab as the original entry that opens the battle game", () => {
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
     const { container } = render(<WireframePrototype />);
 
     fireEvent.change(container.querySelector<HTMLSelectElement>("#screenSelect")!, {
@@ -86,12 +87,14 @@ describe("WireframePrototype", () => {
     });
 
     expect(activeScreenId(container)).toBe("24");
-    expect(container.querySelector("[data-real-link]")).not.toBeInTheDocument();
-    expect(screen.getByText("选 一 位 出 战")).toBeInTheDocument();
-    expect(container.querySelector(".battle-root.embedded")).toBeInTheDocument();
-    expect(container.querySelector("#back-to-home-link")).not.toBeInTheDocument();
+    expect(container.querySelector(".battle-root.embedded")).not.toBeInTheDocument();
+    expect(screen.queryByText("选 一 位 出 战")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "返回卡池" }));
-    expect(activeScreenId(container)).toBe("03");
+    const activeBattleEntry = container.querySelector<HTMLElement>('.screen.active[data-id="24"]')!;
+    const battleButton = within(activeBattleEntry).getByRole("button", { name: /进 入 共 鸣/u });
+    expect(battleButton).toHaveAttribute("data-real-link", "/battle");
+
+    fireEvent.click(battleButton);
+    expect(openSpy).toHaveBeenCalledWith("/battle", "_blank");
   });
 });

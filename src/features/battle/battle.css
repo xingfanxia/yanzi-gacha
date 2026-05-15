@@ -2338,7 +2338,75 @@ body.embed-mode .scene { padding-top: 8px !important; }
 .result-btn:hover { border-color: var(--signal); box-shadow: 0 0 16px rgba(123,201,255,0.3); }
 
 
-/* Next.js migration: embedded mode lets battle live inside wireframe screen 24. */
+/* Next.js migration: keep the battle phone complete in each viewport. */
+.battle-root {
+  padding: clamp(0px, 2.5dvh, 20px) clamp(0px, 3vw, 20px);
+  overflow: hidden;
+}
+.battle-root .phone-shell {
+  width: min(420px, 100%, calc(100dvh * 0.4773));
+  height: auto;
+  max-height: none;
+  aspect-ratio: 21 / 44;
+}
+@media (max-height: 760px) {
+  .battle-root .brand-row {
+    padding: 12px 16px 6px;
+  }
+  .battle-root .scene-title {
+    margin: 8px 0 1px;
+    font-size: 18px;
+  }
+  .battle-root .scene-sub {
+    margin-bottom: 10px;
+  }
+  .battle-root .prep-list {
+    gap: 8px;
+    padding: 0 12px;
+  }
+  .battle-root .choose-card {
+    min-height: 104px;
+  }
+  .battle-root .choose-portrait {
+    width: 80px;
+    height: 104px;
+  }
+  .battle-root .choose-info {
+    padding: 9px 9px 8px 5px;
+  }
+  .battle-root .choose-cn {
+    font-size: 18px;
+  }
+  .battle-root .choose-arch {
+    font-size: 8px;
+    letter-spacing: 2px;
+  }
+  .battle-root .choose-desc {
+    font-size: 10px;
+    line-height: 1.35;
+  }
+  .battle-root .choose-ult {
+    margin-top: 5px;
+    padding: 4px 6px;
+  }
+  .battle-root .choose-ult .ult-name {
+    font-size: 10.5px;
+    letter-spacing: 1.8px;
+  }
+  .battle-root .diff-block {
+    margin: 8px 12px 2px;
+    padding: 8px 10px 9px;
+  }
+  .battle-root .diff-pill {
+    padding: 6px 3px 5px;
+  }
+  .battle-root .cta-hero {
+    margin: 8px 12px 10px;
+    padding: 10px 14px;
+  }
+}
+
+/* Embedded mode remains available for isolated tests, but screen 24 links to /battle. */
 .battle-root.embedded {
   position: absolute;
   inset: 0;

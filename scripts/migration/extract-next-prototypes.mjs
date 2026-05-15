@@ -46,28 +46,6 @@ function rootedAssets(source) {
     .replaceAll('<option value="24">24 · ⚔ 频率战入口</option>', '<option value="24">24 · ⚔ 频率战</option>');
 }
 
-function embedBattleTab(source) {
-  const start = source.indexOf("        <!-- ========== 24 频率战入口 ========== -->");
-  const end = source.indexOf("\n\n      <!-- =============== 全局 modals", start);
-  if (start < 0 || end < 0) {
-    throw new Error("Could not replace wireframe battle tab");
-  }
-  const replacement = `        <!-- ========== 24 频率战 · 内嵌实战 ========== -->
-        <div class="screen s-battle s-battle-tab" data-id="24">
-          <div id="wireframeBattleMount" class="wireframe-battle-mount"></div>
-          <button type="button" class="wireframe-battle-back" data-jump="03" aria-label="返回卡池">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12"/>
-              <polyline points="12 19 5 12 12 5"/>
-            </svg>
-            <span>卡池</span>
-          </button>
-        </div>
-
-      </div>`;
-  return source.slice(0, start) + replacement + source.slice(end);
-}
-
 function stabilizeBattleScript(source) {
   const oldParticles = `function Particles() {
   const particles = useMemo(() => Array.from({length: 12}, (_, i) => ({
@@ -98,50 +76,65 @@ function stabilizeBattleScript(source) {
 const wireframeHtml = read("spec/wireframe.html");
 const wireframeCss = `${rootedAssets(between(wireframeHtml, "<style>", "</style>"))}
 
-/* Next.js migration: screen 24 is now the real embedded battle tab. */
-.s-battle-tab {
-  background: #050816;
-}
-.s-battle-tab .wireframe-battle-mount {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  z-index: 1;
-}
-.s-battle-tab .wireframe-battle-back {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  z-index: 30;
-  display: inline-flex;
+/* Next.js migration: preserve the phone ratio across viewport sizes. */
+.wf-stage {
+  min-height: 100dvh;
+  display: flex;
   align-items: center;
-  gap: 6px;
-  height: 34px;
-  padding: 0 12px 0 10px;
-  border: 1px solid rgba(123, 201, 255, 0.32);
-  border-radius: 999px;
-  background: rgba(8, 12, 28, 0.72);
-  color: rgba(232, 234, 246, 0.9);
-  font-family: "Cormorant Garamond", serif;
-  font-size: 13px;
-  letter-spacing: 0.8px;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28), 0 0 16px rgba(123, 201, 255, 0.08);
-  cursor: pointer;
+  justify-content: center;
+  overflow: hidden;
 }
-.s-battle-tab .wireframe-battle-back:hover {
-  border-color: var(--aurora-cyan);
-  color: var(--aurora-cyan);
+.wf-device {
+  width: min(420px, calc(100vw - 16px), calc((100dvh - 112px) * 0.4615));
+  height: auto;
+  max-height: none;
+  aspect-ratio: 9 / 19.5;
 }
-.s-battle-tab .wireframe-battle-back svg {
-  width: 14px;
-  height: 14px;
+@media (max-width: 700px) {
+  .wf-admin {
+    gap: 8px;
+    padding: 10px 56px 10px 10px;
+  }
+  .wf-admin .tag {
+    display: none;
+  }
+  .wf-admin select {
+    flex: 1;
+    min-width: 0;
+    padding-inline: 8px;
+  }
+  .wf-stage {
+    padding-top: 58px;
+    padding-bottom: 10px;
+  }
+  .wf-mute {
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+}
+@media (max-height: 720px) {
+  .wf-stage {
+    padding-top: 54px;
+    padding-bottom: 8px;
+  }
+  .wf-device {
+    border-width: 4px;
+    border-radius: 36px;
+    width: min(420px, calc(100vw - 12px), calc((100dvh - 70px) * 0.4615));
+  }
+  .wf-notch {
+    top: 7px;
+    width: 84px;
+    height: 22px;
+  }
 }
 `;
-const wireframeBody = embedBattleTab(rootedAssets(
+const wireframeBody = rootedAssets(
   between(wireframeHtml, "<body>", '<script src="assets/sfx.js"></script>').trim(),
-));
+);
 
 write(
   "src/features/wireframe/wireframe.css",
@@ -155,7 +148,75 @@ write(
 const battleHtml = read("battle/index.html");
 const battleCss = `${rootedAssets(between(battleHtml, "<style>", "</style>")).replaceAll("#root", ".battle-root")}
 
-/* Next.js migration: embedded mode lets battle live inside wireframe screen 24. */
+/* Next.js migration: keep the battle phone complete in each viewport. */
+.battle-root {
+  padding: clamp(0px, 2.5dvh, 20px) clamp(0px, 3vw, 20px);
+  overflow: hidden;
+}
+.battle-root .phone-shell {
+  width: min(420px, 100%, calc(100dvh * 0.4773));
+  height: auto;
+  max-height: none;
+  aspect-ratio: 21 / 44;
+}
+@media (max-height: 760px) {
+  .battle-root .brand-row {
+    padding: 12px 16px 6px;
+  }
+  .battle-root .scene-title {
+    margin: 8px 0 1px;
+    font-size: 18px;
+  }
+  .battle-root .scene-sub {
+    margin-bottom: 10px;
+  }
+  .battle-root .prep-list {
+    gap: 8px;
+    padding: 0 12px;
+  }
+  .battle-root .choose-card {
+    min-height: 104px;
+  }
+  .battle-root .choose-portrait {
+    width: 80px;
+    height: 104px;
+  }
+  .battle-root .choose-info {
+    padding: 9px 9px 8px 5px;
+  }
+  .battle-root .choose-cn {
+    font-size: 18px;
+  }
+  .battle-root .choose-arch {
+    font-size: 8px;
+    letter-spacing: 2px;
+  }
+  .battle-root .choose-desc {
+    font-size: 10px;
+    line-height: 1.35;
+  }
+  .battle-root .choose-ult {
+    margin-top: 5px;
+    padding: 4px 6px;
+  }
+  .battle-root .choose-ult .ult-name {
+    font-size: 10.5px;
+    letter-spacing: 1.8px;
+  }
+  .battle-root .diff-block {
+    margin: 8px 12px 2px;
+    padding: 8px 10px 9px;
+  }
+  .battle-root .diff-pill {
+    padding: 6px 3px 5px;
+  }
+  .battle-root .cta-hero {
+    margin: 8px 12px 10px;
+    padding: 10px 14px;
+  }
+}
+
+/* Embedded mode remains available for isolated tests, but screen 24 links to /battle. */
 .battle-root.embedded {
   position: absolute;
   inset: 0;
