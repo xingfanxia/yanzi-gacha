@@ -1,6 +1,10 @@
 node_modules/
 .DS_Store
 .vercel
+.next/
+tsconfig.tsbuildinfo
+coverage/
+test-results/
 
 # 图片备份（WebP 转换前的原 jpg）
 img.original/
